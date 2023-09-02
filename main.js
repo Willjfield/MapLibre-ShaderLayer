@@ -9,6 +9,15 @@ const map = new maplibre.Map({
   hash:true
 });
 
+let slayer;
 map.on('load', () => {
-  map.addLayer(new ShaderLayer(map, 'test', ['Water']),'Aeroway');
+  slayer = new ShaderLayer(map, 'test', ['Water']);
+  map.addLayer(slayer,'Aeroway');
 });
+
+map.on('click',(e)=>{
+  const features = map.queryRenderedFeatures(e.point,{ layers: ['Water'] });
+  const slayers = slayer.getSlayerFeatures();
+  console.log(features);
+  console.log(slayers);
+})
