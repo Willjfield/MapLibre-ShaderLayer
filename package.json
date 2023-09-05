@@ -12,8 +12,10 @@
     "vite": "^4.4.5"
   },
   "dependencies": {
+    "@mapbox/point-geometry": "^0.1.0",
     "bootstrap": "^5.3.1",
     "earcut": "^2.2.4",
-    "maplibre-gl": "^3.3.0"
+    "maplibre-gl": "^3.3.0",
+    "quickselect": "^2.0.0"
   }
 }

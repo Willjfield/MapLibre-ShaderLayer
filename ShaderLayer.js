@@ -1,5 +1,8 @@
 import earcut from "earcut";
 import maplibregl from 'maplibre-gl';
+import { classifyRings } from '../../utils';
+
+
 export default class MapLibreShaderLayer {
     constructor(map, id, fromLayers, fragmentSource, vertexSource) {
 
@@ -118,13 +121,15 @@ export default class MapLibreShaderLayer {
 
         for (var p = 0; p < polygons.length; p++) {
             const hash = this.getFeatureHash(polygons[p]);
-            //console.log(polygons[p].geometry)
+            // console.log(polygons[p]._vectorTileFeature.loadGeometry());
             if (this.keys.indexOf(hash) === -1) {
+                this.addFeature(polygons[p].geometry);
                 if (polygons[p].geometry.type === 'Polygon') {
+                    console.log('solo')
                     var data = earcut.flatten(polygons[p].geometry.coordinates);
-
+                    console.log(polygons[p].geometry.coordinates)
                     var triangles = earcut(data.vertices, data.holes, data.dimensions);
-
+                    console.log(triangles)
 
                     for (var i = 0; i < triangles.length; i++) {
                         if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
@@ -132,28 +137,47 @@ export default class MapLibreShaderLayer {
                                 lng: data.vertices[triangles[i] * 2],
                                 lat: data.vertices[triangles[i] * 2 + 1]
                             });
+                            // console.log(mercPos.x, mercPos.y)
                             this.positions.push(mercPos.x, mercPos.y);
                         }
                     }
                 } else if (polygons[p].geometry.type === 'MultiPolygon') {
+                    console.log('multi')
+                    const coords = polygons[p].geometry.coordinates;
                     // polygons[p]
                     // let coords = typeof polygons[p].geometry.coordinates[0] === 'number' ? polygons[p].geometry.coordinates : polygons[p].geometry.coordinates
-                    polygons[p].geometry.coordinates.forEach((c, i) => {
-                        var data = earcut.flatten(c);
-                        var triangles = earcut(data.vertices, data.holes, data.dimensions);
+                    coords.forEach((_c) => {
+                        //console.log(_c)
+                        _c.forEach((c, i) => {
+                            const arr = [c]
+                            var data = earcut.flatten(arr);
+                            //console.log(c)
+                            var triangles = earcut(data.vertices, data.holes, data.dimensions);
+                            console.log(triangles)
+                            for (var i = 0; i < triangles.length; i++) {
 
-                        for (var i = 0; i < triangles.length; i++) {
-                            if (data.vertices[triangles[i]]
-                                && data.vertices[triangles[i]][0]
-                                && data.vertices[triangles[i]][1]) {
-                                const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
-                                    lng: data.vertices[triangles[i]][0],
-                                    lat: data.vertices[triangles[i]][1]
-                                });
-                                this.positions.push(mercPos.x, mercPos.y);
+                                if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
+                                    const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
+                                        lng: data.vertices[triangles[i] * 2],
+                                        lat: data.vertices[triangles[i] * 2 + 1]
+                                    });
+                                    console.log(mercPos.x, mercPos.y)
+                                    this.positions.push(mercPos.x, mercPos.y);
+                                }
                             }
-                        }
-                    })
+                            // for (var i = 0; i < triangles.length; i++) {
+                            //     if (data.vertices[triangles[i]]
+                            //         && data.vertices[triangles[i]][0]
+                            //         && data.vertices[triangles[i]][1]) {
+                            //         const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
+                            //             lng: data.vertices[triangles[i]][0],
+                            //             lat: data.vertices[triangles[i]][1]
+                            //         });
+                            //         this.positions.push(mercPos.x, mercPos.y);
+                            //     }
+                            // }
+                        })
+                    });
 
                 } else {
                     console.log(polygons[p].geometry.type)
@@ -175,19 +199,9 @@ export default class MapLibreShaderLayer {
             0
         );
     }
-}
 
-// add the custom style layer to the map
-// map.on('load', () => {
-//     map.addLayer(highlightLayer, 'crimea-fill');
-// });
 
-/*
-import {classifyRings} from '../../util/classify_rings'; (below)
-
-addFeature(feature: BucketFeature, geometry: Array<Array<Point>>, index: number, canonical: CanonicalTileID, imagePositions: {
-        [_: string]: ImagePosition;
-    }) {
+    addFeature(geometry) {
         for (const polygon of classifyRings(geometry, EARCUT_MAX_RINGS)) {
             let numVertices = 0;
             for (const ring of polygon) {
@@ -240,64 +254,12 @@ addFeature(feature: BucketFeature, geometry: Array<Array<Point>>, index: number,
             triangleSegment.vertexLength += numVertices;
             triangleSegment.primitiveLength += indices.length / 3;
         }
-        this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, imagePositions, canonical);
     }
 
-import quickselect from 'quickselect';(npm install)
-import type Point from '@mapbox/point-geometry'; (npm install)
-
-function calculateSignedArea(ring: Array<Point>): number {
-    let sum = 0;
-    for (let i = 0, len = ring.length, j = len - 1, p1, p2; i < len; j = i++) {
-        p1 = ring[i];
-        p2 = ring[j];
-        sum += (p2.x - p1.x) * (p1.y + p2.y);
-    }
-    return sum;
 }
 
-// classifies an array of rings into polygons with outer rings and holes
-export function classifyRings(rings: Array<Array<Point>>, maxRings: number) {
-    const len = rings.length;
+// add the custom style layer to the map
+// map.on('load', () => {
+//     map.addLayer(highlightLayer, 'crimea-fill');
+// });
 
-    if (len <= 1) return [rings];
-
-    const polygons = [];
-    let polygon,
-        ccw;
-
-    for (let i = 0; i < len; i++) {
-        const area = calculateSignedArea(rings[i]);
-        if (area === 0) continue;
-
-        (rings[i] as any).area = Math.abs(area);
-
-        if (ccw === undefined) ccw = area < 0;
-
-        if (ccw === area < 0) {
-            if (polygon) polygons.push(polygon);
-            polygon = [rings[i]];
-
-        } else {
-            (polygon as any).push(rings[i]);
-        }
-    }
-    if (polygon) polygons.push(polygon);
-
-    // Earcut performance degrades with the # of rings in a polygon. For this
-    // reason, we limit strip out all but the `maxRings` largest rings.
-    if (maxRings > 1) {
-        for (let j = 0; j < polygons.length; j++) {
-            if (polygons[j].length <= maxRings) continue;
-            quickselect(polygons[j], maxRings, 1, polygons[j].length - 1, compareAreas);
-            polygons[j] = polygons[j].slice(0, maxRings);
-        }
-    }
-
-    return polygons;
-}
-
-function compareAreas(a, b) {
-    return b.area - a.area;
-}
-*/
