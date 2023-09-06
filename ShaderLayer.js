@@ -1,7 +1,7 @@
 import earcut from "earcut";
 import maplibregl from 'maplibre-gl';
-import { classifyRings } from '../../utils';
-
+import { classifyRings } from './utils';
+import SegmentVector from './SegmentVector';
 
 export default class MapLibreShaderLayer {
     constructor(map, id, fromLayers, fragmentSource, vertexSource) {
@@ -15,6 +15,13 @@ export default class MapLibreShaderLayer {
 
         this.positions = [];
 
+        this.layoutVertexArray=[];
+        this.indexArray = [];
+        this.indexArray2 = [];
+
+        this.segments = new SegmentVector();
+        this.segments2 = new SegmentVector();
+       
         // create GLSL source for vertex shader
         const defaultVertexSource = `#version 300 es
     
@@ -118,18 +125,18 @@ export default class MapLibreShaderLayer {
         const strs = this.features.map(f => this.getFeatureHash(f));
 
         const polygons = this.features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
-
+        this.addFeature(polygons[0].geometry.coordinates)
         for (var p = 0; p < polygons.length; p++) {
             const hash = this.getFeatureHash(polygons[p]);
             // console.log(polygons[p]._vectorTileFeature.loadGeometry());
             if (this.keys.indexOf(hash) === -1) {
                 this.addFeature(polygons[p].geometry);
                 if (polygons[p].geometry.type === 'Polygon') {
-                    console.log('solo')
+                   // console.log('solo')
                     var data = earcut.flatten(polygons[p].geometry.coordinates);
-                    console.log(polygons[p].geometry.coordinates)
+                   // console.log(polygons[p].geometry.coordinates)
                     var triangles = earcut(data.vertices, data.holes, data.dimensions);
-                    console.log(triangles)
+                   // console.log(triangles)
 
                     for (var i = 0; i < triangles.length; i++) {
                         if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
@@ -142,7 +149,7 @@ export default class MapLibreShaderLayer {
                         }
                     }
                 } else if (polygons[p].geometry.type === 'MultiPolygon') {
-                    console.log('multi')
+                   // console.log('multi')
                     const coords = polygons[p].geometry.coordinates;
                     // polygons[p]
                     // let coords = typeof polygons[p].geometry.coordinates[0] === 'number' ? polygons[p].geometry.coordinates : polygons[p].geometry.coordinates
@@ -153,7 +160,7 @@ export default class MapLibreShaderLayer {
                             var data = earcut.flatten(arr);
                             //console.log(c)
                             var triangles = earcut(data.vertices, data.holes, data.dimensions);
-                            console.log(triangles)
+                            //console.log(triangles)
                             for (var i = 0; i < triangles.length; i++) {
 
                                 if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
@@ -161,7 +168,7 @@ export default class MapLibreShaderLayer {
                                         lng: data.vertices[triangles[i] * 2],
                                         lat: data.vertices[triangles[i] * 2 + 1]
                                     });
-                                    console.log(mercPos.x, mercPos.y)
+                                    //console.log(mercPos.x, mercPos.y)
                                     this.positions.push(mercPos.x, mercPos.y);
                                 }
                             }
@@ -202,11 +209,14 @@ export default class MapLibreShaderLayer {
 
 
     addFeature(geometry) {
+        const EARCUT_MAX_RINGS = 500;
         for (const polygon of classifyRings(geometry, EARCUT_MAX_RINGS)) {
             let numVertices = 0;
             for (const ring of polygon) {
                 numVertices += ring.length;
             }
+
+            //console.log(numVertices)
 
             const triangleSegment = this.segments.prepareSegment(numVertices, this.layoutVertexArray, this.indexArray);
             const triangleIndex = triangleSegment.vertexLength;
@@ -254,6 +264,7 @@ export default class MapLibreShaderLayer {
             triangleSegment.vertexLength += numVertices;
             triangleSegment.primitiveLength += indices.length / 3;
         }
+        console.log(this.layoutVertexArray)
     }
 
 }
