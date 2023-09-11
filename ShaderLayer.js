@@ -1,9 +1,11 @@
 import earcut from "earcut";
 import maplibregl from 'maplibre-gl';
-
+import { ProgrammableTimer } from "./Timer";
 
 export default class MapLibreShaderLayer {
-    constructor(map, id, fromLayers, fragmentSource, vertexSource) {
+    constructor(map, id, fromLayers, opts) {
+        //map, id, fromLayers, fragmentSource, vertexSource;
+        this.opts = opts || {};
 
         this.id = id;
         this.map = map;
@@ -31,12 +33,19 @@ export default class MapLibreShaderLayer {
                 fragColor = vec4(1.0, 0.0, 0.0, 1.0);
             }`;
 
-        this.fragmentSource = fragmentSource || defaultFragmentSource;
-        this.vertexSource = vertexSource || defaultVertexSource;
+        
 
         this.positionLength = 0;
 
+        this._frameNum = 0;
 
+        this.fragmentSource = this.opts.fragmentSource || defaultFragmentSource;
+        this.vertexSource = this.opts.vertexSource || defaultVertexSource;
+       // console.log(this.fragmentSource, this.vertexSource)
+        // TODO: Get back to real time callback later...
+        // this.realtimeCallback =  opts.realtimeCallback || null;
+        // this.realTimeCallbackHz = opts.realTimeCallbackHz || 100;
+        this.onRenderCallback = this.opts.onRenderCallback || null;
     }
 
 
@@ -44,6 +53,10 @@ export default class MapLibreShaderLayer {
     // method called when the layer is added to the map
     // Search for StyleImageInterface in https://maplibre.org/maplibre-gl-js/docs/API/
     onAdd(map, gl) {
+
+        // if(this.realtimeCallback){
+        //     this.timer = new ProgrammableTimer(this.realTimeCallbackHz,this.realtimeCallback);
+        // }
 
         // create a vertex shader
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -71,7 +84,13 @@ export default class MapLibreShaderLayer {
     // method fired on each animation frame
     render(gl, matrix) {
 
+        this._frameNum++;
+
         this.calculateVertices(gl);
+
+        if(this.onRenderCallback){
+            this.onRenderCallback(this.map, this._frameNum, gl);
+        }
 
         gl.useProgram(this.program);
         gl.uniformMatrix4fv(
@@ -110,50 +129,43 @@ export default class MapLibreShaderLayer {
         return this.keys;
     }
 
+    coordinatesToPositions(_coords) {
+        var data = earcut.flatten(_coords);
+        var triangles = earcut(data.vertices, data.holes, data.dimensions);
+       
+        for (var i = 0; i < triangles.length; i++) {
+            if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
+                const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
+                    lng: data.vertices[triangles[i] * 2],
+                    lat: data.vertices[triangles[i] * 2 + 1]
+                });
+                this.positions.push(mercPos.x, mercPos.y);
+            }
+        }
+    }
+
     calculateVertices(gl) {
         this.features = this.map.queryRenderedFeatures({ layers: this.fromLayers });
-
+       
         const strs = this.features.map(f => this.getFeatureHash(f));
 
         const polygons = this.features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
-        //this.addFeature(polygons[0].geometry.coordinates)
+
         for (var p = 0; p < polygons.length; p++) {
-            const hash = this.getFeatureHash(polygons[p]);
-
+            //TODO: hash not working
+            //const hash = this.getFeatureHash(polygons[p]);
+            //if(this.keys.indexOf(hash) === -1){
+            //Or not
             if (true) {
-
                 if (polygons[p].geometry.type === 'Polygon') {
-
-                    var data = earcut.flatten(polygons[p].geometry.coordinates);
-
-                    var triangles = earcut(data.vertices, data.holes, data.dimensions);
-
-                    for (var i = 0; i < triangles.length; i++) {
-                        if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
-                            const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
-                                lng: data.vertices[triangles[i] * 2],
-                                lat: data.vertices[triangles[i] * 2 + 1]
-                            });
-                            this.positions.push(mercPos.x, mercPos.y);
-                        }
-                    }
+                    let _coords = polygons[p].geometry.coordinates;
+                    this.coordinatesToPositions(_coords)
                 } else if (polygons[p].geometry.type === 'MultiPolygon') {
                     const multiCoords = polygons[p].geometry.coordinates;
                     multiCoords.forEach((solocoords, i) => {
-
-                        var data = earcut.flatten(solocoords);
-                        var triangles = earcut(data.vertices, data.holes, data.dimensions);
-                        for (var i = 0; i < triangles.length; i++) {
-                            if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
-                                const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
-                                    lng: data.vertices[triangles[i] * 2],
-                                    lat: data.vertices[triangles[i] * 2 + 1]
-                                });
-                                this.positions.push(mercPos.x, mercPos.y);
-                            }
-                        }
+                        const _coords = solocoords;
+                        this.coordinatesToPositions(_coords)
                     })
-
                 } else {
                     console.log(polygons[p].geometry.type)
                 }
@@ -161,7 +173,6 @@ export default class MapLibreShaderLayer {
             }
         }
 
-        this.keys = this.keys.concat(strs.filter((f, i) => this.keys.indexOf(f) === -1));
         this.positionLength = this.positions.length;
 
         // create and initialize a WebGLBuffer to store vertex and color data
@@ -176,6 +187,8 @@ export default class MapLibreShaderLayer {
         );
 
         this.positions = [];
+        this.keys = this.keys.concat(strs.filter((f, i) => this.keys.indexOf(f) === -1));
+
     }
 
 
