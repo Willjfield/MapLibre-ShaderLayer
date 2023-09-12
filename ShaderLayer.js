@@ -38,7 +38,7 @@ export default class MapLibreShaderLayer {
 
         this.fragmentSource = this.opts.fragmentSource || defaultFragmentSource;
         this.vertexSource = this.opts.vertexSource || defaultVertexSource;
-
+        this.animate = this.opts.animate || false;
         this.onRenderCallback = this.opts.onRenderCallback || null;
     }
 
@@ -69,9 +69,20 @@ export default class MapLibreShaderLayer {
         this.calculateVertices(gl);
     }
 
+    updateAnimationFrame(gl) {
+        if (!this.animate) return;
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+        gl.enableVertexAttribArray(this.aPos);
+        gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
+        //gl.enable(gl.BLEND);
+        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        gl.drawArrays(gl.TRIANGLES, 0, this.positionLength / 2);
+    }
     // method fired on each animation frame
     render(gl, matrix) {
+        this.matrix = matrix;
 
         this.calculateVertices(gl);
 
@@ -164,7 +175,7 @@ export default class MapLibreShaderLayer {
         this.positionLength = this.positions.length;
 
         // create and initialize a WebGLBuffer to store vertex and color data
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        // gl.clear(gl.COLOR_BUFFER_BIT);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
         gl.bufferData(

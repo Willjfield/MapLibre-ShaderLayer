@@ -20,22 +20,26 @@ void main() {
 }`
 
 let u1Location;
+let frameNum = 0;
 function animate(_slayer) {
+  frameNum++;
   const gl = _slayer.context;
   const prog = _slayer.program;
-
+  //console.log(_slayer.matrix)
   gl.useProgram(prog);
   if (!u1Location) {
     u1Location = gl.getUniformLocation(prog, 'u_test');
   } else {
-    gl.uniform1f(u1Location, Math.random());
+    gl.uniform1f(u1Location, Math.sin(frameNum / 100));
   }
 
+  //_slayer.updateAnimationFrame(gl);
+  map.triggerRepaint();
   requestAnimationFrame(() => { animate(slayer) });
 }
 
 map.on('load', () => {
-  slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag });
+  slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag, animate: true });
   requestAnimationFrame(() => { animate(slayer) });
   map.addLayer(slayer, 'Aeroway');
 });
