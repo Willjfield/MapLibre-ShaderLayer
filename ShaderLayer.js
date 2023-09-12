@@ -33,19 +33,23 @@ export default class MapLibreShaderLayer {
                 fragColor = vec4(1.0, 0.0, 0.0, 1.0);
             }`;
 
-        
+
 
         this.positionLength = 0;
 
-        this._frameNum = 0;
+        this.start;
+        this.elapsed;
+        this.animation;
 
         this.fragmentSource = this.opts.fragmentSource || defaultFragmentSource;
         this.vertexSource = this.opts.vertexSource || defaultVertexSource;
-       // console.log(this.fragmentSource, this.vertexSource)
+        // console.log(this.fragmentSource, this.vertexSource)
         // TODO: Get back to real time callback later...
         // this.realtimeCallback =  opts.realtimeCallback || null;
         // this.realTimeCallbackHz = opts.realTimeCallbackHz || 100;
         this.onRenderCallback = this.opts.onRenderCallback || null;
+
+        this.onAnimationFrameUpdate = this.opts.onAnimationFrameUpdate || null;
     }
 
 
@@ -57,6 +61,10 @@ export default class MapLibreShaderLayer {
         // if(this.realtimeCallback){
         //     this.timer = new ProgrammableTimer(this.realTimeCallbackHz,this.realtimeCallback);
         // }
+
+        if (this.onAnimationFrameUpdate) {
+            window.requestAnimationFrame(this.step);
+        }
 
         // create a vertex shader
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -84,12 +92,10 @@ export default class MapLibreShaderLayer {
     // method fired on each animation frame
     render(gl, matrix) {
 
-        this._frameNum++;
-
         this.calculateVertices(gl);
 
-        if(this.onRenderCallback){
-            this.onRenderCallback(this.map, this._frameNum, gl);
+        if (this.onRenderCallback) {
+            this.onRenderCallback(this.map, gl);
         }
 
         gl.useProgram(this.program);
@@ -132,7 +138,7 @@ export default class MapLibreShaderLayer {
     coordinatesToPositions(_coords) {
         var data = earcut.flatten(_coords);
         var triangles = earcut(data.vertices, data.holes, data.dimensions);
-       
+
         for (var i = 0; i < triangles.length; i++) {
             if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
                 const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
@@ -146,7 +152,7 @@ export default class MapLibreShaderLayer {
 
     calculateVertices(gl) {
         this.features = this.map.queryRenderedFeatures({ layers: this.fromLayers });
-       
+
         const strs = this.features.map(f => this.getFeatureHash(f));
 
         const polygons = this.features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
@@ -193,6 +199,21 @@ export default class MapLibreShaderLayer {
 
 
 
+
+    step(timeStamp) {
+       
+        if (!this.start) {
+            this.start = timeStamp;
+        }
+
+        this.elapsed = timeStamp - this.start;
+
+
+        this.onAnimationFrameUpdate(this.map, this.gl, this.elapsed);
+
+
+        window.requestAnimationFrame(step);
+    }
 
 }
 
