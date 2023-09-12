@@ -1,6 +1,5 @@
 import earcut from "earcut";
 import maplibregl from 'maplibre-gl';
-import { ProgrammableTimer } from "./Timer";
 
 export default class MapLibreShaderLayer {
     constructor(map, id, fromLayers, opts) {
@@ -15,6 +14,8 @@ export default class MapLibreShaderLayer {
         this.keys = [];
 
         this.positions = [];
+
+        this.matrix;
 
         // create GLSL source for vertex shader
         const defaultVertexSource = `#version 300 es
@@ -33,38 +34,18 @@ export default class MapLibreShaderLayer {
                 fragColor = vec4(1.0, 0.0, 0.0, 1.0);
             }`;
 
-
-
         this.positionLength = 0;
-
-        this.start;
-        this.elapsed;
-        this.animation;
 
         this.fragmentSource = this.opts.fragmentSource || defaultFragmentSource;
         this.vertexSource = this.opts.vertexSource || defaultVertexSource;
-        // console.log(this.fragmentSource, this.vertexSource)
-        // TODO: Get back to real time callback later...
-        // this.realtimeCallback =  opts.realtimeCallback || null;
-        // this.realTimeCallbackHz = opts.realTimeCallbackHz || 100;
+
         this.onRenderCallback = this.opts.onRenderCallback || null;
-
-        this.onAnimationFrameUpdate = this.opts.onAnimationFrameUpdate || null;
     }
-
-
 
     // method called when the layer is added to the map
     // Search for StyleImageInterface in https://maplibre.org/maplibre-gl-js/docs/API/
     onAdd(map, gl) {
-
-        // if(this.realtimeCallback){
-        //     this.timer = new ProgrammableTimer(this.realTimeCallbackHz,this.realtimeCallback);
-        // }
-
-        if (this.onAnimationFrameUpdate) {
-            window.requestAnimationFrame(this.step);
-        }
+        this.context = gl;
 
         // create a vertex shader
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -94,11 +75,13 @@ export default class MapLibreShaderLayer {
 
         this.calculateVertices(gl);
 
+        gl.useProgram(this.program);
+
         if (this.onRenderCallback) {
-            this.onRenderCallback(this.map, gl);
+            this.onRenderCallback(this.map, gl, this.program);
         }
 
-        gl.useProgram(this.program);
+
         gl.uniformMatrix4fv(
             gl.getUniformLocation(this.program, 'u_matrix'),
             false,
@@ -127,7 +110,6 @@ export default class MapLibreShaderLayer {
     }
 
     getFeatureHash(f) {
-
         return this.createHash(`${f.layer.id}-${f.source}-${f.sourceLayer}-${JSON.stringify(f.properties)}-${JSON.stringify(f.geometry.coordinates)}-${f._vectorTileFeature._x}-${f._vectorTileFeature._y}-${f._vectorTileFeature._z}`)
     }
 
@@ -173,7 +155,7 @@ export default class MapLibreShaderLayer {
                         this.coordinatesToPositions(_coords)
                     })
                 } else {
-                    console.log(polygons[p].geometry.type)
+                    console.warn(polygons[p].geometry.type, ' not supported');
                 }
 
             }
@@ -195,24 +177,6 @@ export default class MapLibreShaderLayer {
         this.positions = [];
         this.keys = this.keys.concat(strs.filter((f, i) => this.keys.indexOf(f) === -1));
 
-    }
-
-
-
-
-    step(timeStamp) {
-       
-        if (!this.start) {
-            this.start = timeStamp;
-        }
-
-        this.elapsed = timeStamp - this.start;
-
-
-        this.onAnimationFrameUpdate(this.map, this.gl, this.elapsed);
-
-
-        window.requestAnimationFrame(step);
     }
 
 }

@@ -12,20 +12,37 @@ const map = new maplibre.Map({
 let slayer;
 
 const frag = `#version 300 es
-    
+precision mediump float;
+uniform float u_test;
 out highp vec4 fragColor;
 void main() {
-    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    fragColor = vec4(u_test, 2.0*u_test, 1.-u_test, 1.0);
 }`
+
+let u1Location;
+function animate(_slayer) {
+  const gl = _slayer.context;
+  const prog = _slayer.program;
+
+  gl.useProgram(prog);
+  if (!u1Location) {
+    u1Location = gl.getUniformLocation(prog, 'u_test');
+  } else {
+    gl.uniform1f(u1Location, Math.random());
+  }
+
+  requestAnimationFrame(() => { animate(slayer) });
+}
 
 map.on('load', () => {
   slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag });
+  requestAnimationFrame(() => { animate(slayer) });
   map.addLayer(slayer, 'Aeroway');
 });
 
 map.on('click', (e) => {
   const features = map.queryRenderedFeatures(e.point, { layers: ['Water'] });
   const slayers = slayer.getSlayerFeatures();
-   console.log(features);
-   console.log(slayers);
+  console.log(features);
+  console.log(slayers);
 })
