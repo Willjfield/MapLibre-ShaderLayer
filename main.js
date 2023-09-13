@@ -16,7 +16,7 @@ precision mediump float;
 uniform float u_test;
 out highp vec4 fragColor;
 void main() {
-    fragColor = vec4(u_test, 2.0*u_test, 1.-u_test, 1.0);
+    fragColor = vec4((u_test+1.)/2., gl_FragCoord.xy/1000., 1.0);
 }`
 
 let u1Location;
@@ -30,7 +30,7 @@ function animate(_slayer) {
   if (!u1Location) {
     u1Location = gl.getUniformLocation(prog, 'u_test');
   } else {
-    gl.uniform1f(u1Location, Math.sin(frameNum / 100));
+    gl.uniform1f(u1Location, Math.sin(frameNum / 20));
   }
 
   //_slayer.updateAnimationFrame(gl);
