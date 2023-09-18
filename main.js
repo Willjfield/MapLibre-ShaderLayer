@@ -13,27 +13,61 @@ let slayer;
 
 const frag = `#version 300 es
 precision mediump float;
-uniform float u_test;
+uniform float u_frame;
+uniform vec4 u_bbox;
+uniform vec2 u_resolution;
+
 out highp vec4 fragColor;
+//https://github.com/msfeldstein/glsl-map/blob/master/index.glsl
+vec2 map(vec2 value, vec2 inMin, vec2 inMax, vec2 outMin, vec2 outMax) {
+  return outMin + (outMax - outMin) * (value - inMin) / (inMax - inMin);
+}
+
+vec2 mapToScreen() {
+  float normalizedX = gl_FragCoord.x / u_resolution.x;
+  float normalizedY = gl_FragCoord.y / u_resolution.y;
+
+  vec2 u_bbox = map(vec2(normalizedX, normalizedY), vec2(0., 0.), vec2(1., 1.),u_bbox.xy, u_bbox.zw);
+ 
+  return vec2((u_bbox.x/180.+1.)/2., (u_bbox.y/90.+1.)/2.);
+}
+
 void main() {
-    fragColor = vec4((u_test+1.)/2., gl_FragCoord.xy/1000., 1.0);
+    fragColor = vec4(mapToScreen().x,mapToScreen().y, 1.0, 1.0);
 }`
 
-let u1Location;
+let u_frame;
+let u_bboxLocation;
+let u_resolutionLocation;
+
 let frameNum = 0;
 function animate(_slayer) {
   frameNum++;
   const gl = _slayer.context;
   const prog = _slayer.program;
-  //console.log(_slayer.matrix)
+
   gl.useProgram(prog);
-  if (!u1Location) {
-    u1Location = gl.getUniformLocation(prog, 'u_test');
+  if (!u_frame) {
+    u_frame = gl.getUniformLocation(prog, 'u_frame');
   } else {
-    gl.uniform1f(u1Location, Math.sin(frameNum / 20));
+    gl.uniform1f(u_frame, Math.sin(frameNum / 20));
   }
 
-  //_slayer.updateAnimationFrame(gl);
+  //This could be on map move instead of in animate:
+  if (!u_bboxLocation) {
+    u_bboxLocation = gl.getUniformLocation(prog, 'u_bbox');
+  } else {
+    const nw = map.unproject([0,map.getContainer().offsetHeight]);
+    const se = map.unproject([map.getContainer().offsetWidth, 0]);
+    gl.uniform4fv(u_bboxLocation, [nw.lng, nw.lat, se.lng, se.lat]);
+  }
+
+  //This should be on resize instead of in animate:
+  if(!u_resolutionLocation){
+    u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
+    gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
+  }
+
   map.triggerRepaint();
   requestAnimationFrame(() => { animate(slayer) });
 }
