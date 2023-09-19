@@ -23,7 +23,7 @@ vec2 map(vec2 value, vec2 inMin, vec2 inMax, vec2 outMin, vec2 outMax) {
   return outMin + (outMax - outMin) * (value - inMin) / (inMax - inMin);
 }
 
-vec2 mapToScreen() {
+vec2 normalizedFragCoordFromLatLng() {
   float normalizedX = gl_FragCoord.x / u_resolution.x;
   float normalizedY = gl_FragCoord.y / u_resolution.y;
 
@@ -33,7 +33,7 @@ vec2 mapToScreen() {
 }
 
 void main() {
-    fragColor = vec4(mapToScreen().x,mapToScreen().y, 1.0, 1.0);
+    fragColor = vec4(normalizedFragCoordFromLatLng().x,normalizedFragCoordFromLatLng().y, 1.0, 1.0);
 }`
 
 let u_frame;
