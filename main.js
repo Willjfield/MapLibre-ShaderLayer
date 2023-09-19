@@ -23,13 +23,21 @@ vec2 map(vec2 value, vec2 inMin, vec2 inMax, vec2 outMin, vec2 outMax) {
   return outMin + (outMax - outMin) * (value - inMin) / (inMax - inMin);
 }
 
+float longToNormalizedX(float lng) {
+  return (lng/180.+1.)/2.;
+}
+
+float latToNormalizedY(float lat) {
+  return (u_bbox.y/90.+1.)/2.;
+}
+
 vec2 normalizedFragCoordFromLatLng() {
   float normalizedX = gl_FragCoord.x / u_resolution.x;
   float normalizedY = gl_FragCoord.y / u_resolution.y;
 
   vec2 u_bbox = map(vec2(normalizedX, normalizedY), vec2(0., 0.), vec2(1., 1.),u_bbox.xy, u_bbox.zw);
  
-  return vec2((u_bbox.x/180.+1.)/2., (u_bbox.y/90.+1.)/2.);
+  return vec2(longToNormalizedX(u_bbox.x), latToNormalizedY(u_bbox.y));
 }
 
 void main() {
