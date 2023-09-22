@@ -130,16 +130,21 @@ export default class MapLibreShaderLayer {
 
     coordinatesToPositions(_coords) {
         var data = earcut.flatten(_coords);
-        var triangles = earcut(data.vertices, data.holes, data.dimensions);
-
+       
+        var triangles = earcut(data.vertices, data.holes, 2);
+       
         for (var i = 0; i < triangles.length; i++) {
-            if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
+           // if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
                 const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
-                    lng: data.vertices[triangles[i] * 2],
-                    lat: data.vertices[triangles[i] * 2 + 1]
+                    lng: data.vertices[triangles[i] * 2] || 0,
+                    lat: data.vertices[triangles[i] * 2 + 1]|| 0
                 });
                 this.positions.push(mercPos.x, mercPos.y);
-            }
+            // }else{
+            //     console.log(data.vertices[triangles[0]])
+            //     console.log(triangles[i] * 2, triangles[i] * 2 + 1,data.vertices.length);
+            //     console.log(data.vertices[triangles[i] * 2] , data.vertices[triangles[i] * 2 + 1])
+            // }
         }
     }
 
@@ -149,6 +154,7 @@ export default class MapLibreShaderLayer {
         const strs = this.features.map(f => this.getFeatureHash(f));
 
         const polygons = this.features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+
 
         for (var p = 0; p < polygons.length; p++) {
             //TODO: hash not working
@@ -173,7 +179,7 @@ export default class MapLibreShaderLayer {
         }
 
         this.positionLength = this.positions.length;
-
+       
         // create and initialize a WebGLBuffer to store vertex and color data
         // gl.clear(gl.COLOR_BUFFER_BIT);
 

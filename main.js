@@ -81,8 +81,8 @@ function animate(_slayer) {
 }
 
 map.on('load', () => {
-  slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag, animate: true });
-  requestAnimationFrame(() => { animate(slayer) });
+  slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag, animate: false });
+ // requestAnimationFrame(() => { animate(slayer) });
   map.addLayer(slayer, 'Aeroway');
 });
 
