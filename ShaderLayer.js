@@ -38,7 +38,7 @@ export default class MapLibreShaderLayer {
 
         this.fragmentSource = this.opts.fragmentSource || defaultFragmentSource;
         this.vertexSource = this.opts.vertexSource || defaultVertexSource;
-        this.animate = this.opts.animate || false;
+        this.animate = this.opts.animate || null;
         this.onRenderCallback = this.opts.onRenderCallback || null;
     }
 
@@ -67,19 +67,12 @@ export default class MapLibreShaderLayer {
         this.buffer = gl.createBuffer();
 
         this.calculateVertices(gl);
+
+        if (this.animate) {
+            this.animate(this);
+        }
     }
 
-    updateAnimationFrame(gl) {
-        if (!this.animate) return;
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-        gl.enableVertexAttribArray(this.aPos);
-        gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
-        //gl.enable(gl.BLEND);
-        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-        gl.drawArrays(gl.TRIANGLES, 0, this.positionLength / 2);
-    }
     // method fired on each animation frame
     render(gl, matrix) {
         this.matrix = matrix;
@@ -124,22 +117,18 @@ export default class MapLibreShaderLayer {
         return this.createHash(`${f.layer.id}-${f.source}-${f.sourceLayer}-${JSON.stringify(f.properties)}-${JSON.stringify(f.geometry.coordinates)}-${f._vectorTileFeature._x}-${f._vectorTileFeature._y}-${f._vectorTileFeature._z}`)
     }
 
-    getSlayerFeatures() {
-        return this.keys;
-    }
-
     coordinatesToPositions(_coords) {
         var data = earcut.flatten(_coords);
-       
+
         var triangles = earcut(data.vertices, data.holes, 2);
-       
+
         for (var i = 0; i < triangles.length; i++) {
-           // if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
-                const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
-                    lng: data.vertices[triangles[i] * 2] || 0,
-                    lat: data.vertices[triangles[i] * 2 + 1]|| 0
-                });
-                this.positions.push(mercPos.x, mercPos.y);
+            // if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
+            const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
+                lng: data.vertices[triangles[i] * 2] || 0,
+                lat: data.vertices[triangles[i] * 2 + 1] || 0
+            });
+            this.positions.push(mercPos.x, mercPos.y);
             // }else{
             //     console.log(data.vertices[triangles[0]])
             //     console.log(triangles[i] * 2, triangles[i] * 2 + 1,data.vertices.length);
@@ -179,7 +168,7 @@ export default class MapLibreShaderLayer {
         }
 
         this.positionLength = this.positions.length;
-       
+
         // create and initialize a WebGLBuffer to store vertex and color data
         // gl.clear(gl.COLOR_BUFFER_BIT);
 
