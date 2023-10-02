@@ -19,24 +19,26 @@ float latToNormalizedY(float lat) {
 }
 
 vec2 normalizedFragCoordFromLatLng() {
-  float normalizedX = gl_FragCoord.x / u_resolution.x;
-  float normalizedY = gl_FragCoord.y / u_resolution.y;
-
-  vec2 u_bbox = map(vec2(normalizedX, normalizedY), vec2(0., 0.), vec2(1., 1.),u_bbox.xy, u_bbox.zw);
- 
-  return vec2(longToNormalizedX(u_bbox.x), latToNormalizedY(u_bbox.y));
+  //0-1 frag coord
+  //float normalizedX = gl_FragCoord.x / u_resolution.x;
+  //float normalizedY = gl_FragCoord.y / u_resolution.y;
+  vec2 uv =gl_FragCoord.xy/u_resolution;
+  //uv.x *= u_resolution.x/u_resolution.y;
+  uv = uv*2.-1.;
+  //Map 0-1 frag coord, which can go from 0,0 to 1,1 to sw, ne bounding box
+  vec2 frag_lnglat = map(uv, vec2(-1.,-1.), vec2(1., 1.),u_bbox.xy, u_bbox.zw);
+  //The lat/lng of the fragment
+  return frag_lnglat;
 }
 
 
 
 
 void main() {
-vec2 nyc = vec2(40.730610,-73.935242);
-float nrmlat = ((nyc.x/90.)+1.)/2.;//latToNormalizedY();
-float nrmlng = ((nyc.y/180.)+1.)/2.;//longToNormalizedX(-73.935242);
-vec2 normNYC = vec2(nrmlat,nrmlng);
-vec2 normFrag = normalizedFragCoordFromLatLng();
+    vec2 nyc = vec2(-71.535242,41.2);
 
- float dist = clamp(distance(vec2(nrmlng,nrmlat),normFrag),0.,.1);
-    fragColor = vec4(vec2(dist),0.,1.0);
+    vec2 normFrag = normalizedFragCoordFromLatLng();
+    float dist = distance(normFrag,nyc);
+    vec3 color = dist > .15 ? vec3(1.,.5,0.) : vec3(0.,.5,1.);
+    fragColor = vec4(color,1.0);
 }

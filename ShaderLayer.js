@@ -123,17 +123,16 @@ export default class MapLibreShaderLayer {
         var triangles = earcut(data.vertices, data.holes, 2);
 
         for (var i = 0; i < triangles.length; i++) {
-            // if (data.vertices[triangles[i] * 2] && data.vertices[triangles[i] * 2 + 1]) {
-            const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
-                lng: data.vertices[triangles[i] * 2] || 0,
-                lat: data.vertices[triangles[i] * 2 + 1] || 0
-            });
-            this.positions.push(mercPos.x, mercPos.y);
-            // }else{
-            //     console.log(data.vertices[triangles[0]])
-            //     console.log(triangles[i] * 2, triangles[i] * 2 + 1,data.vertices.length);
-            //     console.log(data.vertices[triangles[i] * 2] , data.vertices[triangles[i] * 2 + 1])
-            // }
+            if (typeof data.vertices[triangles[i] * 2] === 'number'
+                && typeof data.vertices[triangles[i] * 2 + 1] === 'number') {
+                const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
+                    lng: data.vertices[triangles[i] * 2],
+                    lat: data.vertices[triangles[i] * 2 + 1]
+                });
+                this.positions.push(mercPos.x, mercPos.y);
+            } else {
+                console.error('Error in coordinatesToPositions', data.vertices[triangles[i] * 2], data.vertices[triangles[i] * 2 + 1]);
+            }
         }
     }
 

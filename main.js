@@ -17,6 +17,13 @@ map.on('load', () => {
   map.addLayer(slayer, 'Aeroway');
 });
 
+// map.on('dragend', (e) => {
+//   const sw = map.unproject([0, map.getContainer().offsetHeight]);
+//      const ne = map.unproject([map.getContainer().offsetWidth, 0]);
+//      console.log(sw,ne);
+
+// })
+
 let u_frame;
 let u_bboxLocation;
 let u_resolutionLocation;
@@ -36,20 +43,23 @@ function animation(_slayer) {
   }
 
   //This could be on map move instead of in animate:
-  if (!u_bboxLocation) {
+ // if (!u_bboxLocation) {
     u_bboxLocation = gl.getUniformLocation(prog, 'u_bbox');
-  } else {
-    const nw = map.unproject([0, map.getContainer().offsetHeight]);
-    const se = map.unproject([map.getContainer().offsetWidth, 0]);
-    gl.uniform4fv(u_bboxLocation, [nw.lng, nw.lat, se.lng, se.lat]);
-  }
+
+    // const sw = map.unproject([0, map.getContainer().offsetHeight]);
+    // const ne = map.unproject([map.getContainer().offsetWidth, 0]);
+    const sw = map.unproject([0, map.getContainer().offsetHeight]);
+     const ne = map.unproject([map.getContainer().offsetWidth, 0]);
+    //console.log(sw,ne)
+    gl.uniform4fv(u_bboxLocation, [sw.lng, sw.lat, ne.lng, ne.lat]);
+ // }
 
   //This should be on resize instead of in animate:
   if (!u_resolutionLocation) {
     u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
     gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
   }
-
+  //console.log(frameNum)
   map.triggerRepaint();
   requestAnimationFrame(() => { animation(_slayer) });
 }
