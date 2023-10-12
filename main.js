@@ -24,9 +24,23 @@ map.on('load', () => {
 
 // })
 
+
+
 let u_frame;
 let u_bboxLocation;
 let u_resolutionLocation;
+
+map.on('move',()=>{
+  const gl = slayer.context;
+  const prog = slayer.program;
+
+  u_bboxLocation = gl.getUniformLocation(prog, 'u_bbox');
+
+  const sw = map.unproject([0, map.getContainer().offsetHeight]);
+   const ne = map.unproject([map.getContainer().offsetWidth, 0]);
+
+  gl.uniform4fv(u_bboxLocation, [sw.lng, sw.lat, ne.lng, ne.lat]);
+});
 
 let frameNum = 0;
 function animation(_slayer) {
@@ -42,24 +56,12 @@ function animation(_slayer) {
     gl.uniform1f(u_frame, Math.sin(frameNum / 20));
   }
 
-  //This could be on map move instead of in animate:
- // if (!u_bboxLocation) {
-    u_bboxLocation = gl.getUniformLocation(prog, 'u_bbox');
-
-    // const sw = map.unproject([0, map.getContainer().offsetHeight]);
-    // const ne = map.unproject([map.getContainer().offsetWidth, 0]);
-    const sw = map.unproject([0, map.getContainer().offsetHeight]);
-     const ne = map.unproject([map.getContainer().offsetWidth, 0]);
-    //console.log(sw,ne)
-    gl.uniform4fv(u_bboxLocation, [sw.lng, sw.lat, ne.lng, ne.lat]);
- // }
-
   //This should be on resize instead of in animate:
   if (!u_resolutionLocation) {
     u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
     gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
   }
-  //console.log(frameNum)
+  
   map.triggerRepaint();
   requestAnimationFrame(() => { animation(_slayer) });
 }
