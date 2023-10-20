@@ -1,5 +1,6 @@
 import earcut from "earcut";
 import maplibregl from 'maplibre-gl';
+import proj4 from 'proj4';
 
 export default class MapLibreShaderLayer {
     constructor(map, id, fromLayers, opts) {
@@ -152,7 +153,8 @@ export default class MapLibreShaderLayer {
             if (true) {
                 if (polygons[p].geometry.type === 'Polygon') {
                     let _coords = polygons[p].geometry.coordinates;
-                    this.coordinatesToPositions(_coords)
+                    this.coordinatesToPositions(_coords);
+                    // console.log(polygons[p].properties)
                 } else if (polygons[p].geometry.type === 'MultiPolygon') {
                     const multiCoords = polygons[p].geometry.coordinates;
                     multiCoords.forEach((solocoords, i) => {
@@ -184,6 +186,21 @@ export default class MapLibreShaderLayer {
 
     }
 
+    updateMapBBox() {
+        const gl = this.context;
+        const prog = this.program;
+
+        const u_bboxLocation = gl.getUniformLocation(prog, 'u_bbox');
+
+        const map = this.map;
+
+        const sw4326 = map.unproject([0, map.getContainer().offsetHeight]);
+        const ne4326 = map.unproject([map.getContainer().offsetWidth, 0]);
+        const sw3857 = proj4('EPSG:4326', 'EPSG:3857', [sw4326.lng, sw4326.lat]);
+        const ne3857 = proj4('EPSG:4326', 'EPSG:3857', [ne4326.lng, ne4326.lat]);
+
+        gl.uniform4fv(u_bboxLocation, [sw3857[0], sw3857[1], ne3857[0], ne3857[1]]);
+    }
 }
 
 

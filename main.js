@@ -1,6 +1,7 @@
 import maplibre from 'maplibre-gl';
 import ShaderLayer from './ShaderLayer.js';
 import frag from './frag.glsl';
+import proj4 from 'proj4';
 
 const map = new maplibre.Map({
   container: 'map',
@@ -12,34 +13,28 @@ const map = new maplibre.Map({
 
 let slayer;
 
-map.on('load', () => {
+map.once('load', () => {
   slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag, animate: animation });
+
   map.addLayer(slayer, 'Aeroway');
 });
 
-// map.on('dragend', (e) => {
-//   const sw = map.unproject([0, map.getContainer().offsetHeight]);
-//      const ne = map.unproject([map.getContainer().offsetWidth, 0]);
-//      console.log(sw,ne);
-
-// })
-
-
-
 let u_frame;
-let u_bboxLocation;
 let u_resolutionLocation;
+let loc_location;
 
-map.on('move',()=>{
+map.on('move', () => {
   const gl = slayer.context;
   const prog = slayer.program;
 
-  u_bboxLocation = gl.getUniformLocation(prog, 'u_bbox');
+  slayer.updateMapBBox();
 
-  const sw = map.unproject([0, map.getContainer().offsetHeight]);
-   const ne = map.unproject([map.getContainer().offsetWidth, 0]);
+  loc_location = gl.getUniformLocation(prog, 'u_location');
 
-  gl.uniform4fv(u_bboxLocation, [sw.lng, sw.lat, ne.lng, ne.lat]);
+  const nyc = [-71.5802, 41.1693];
+  const nyc3857 = proj4('EPSG:4326', 'EPSG:3857', nyc);
+
+  gl.uniform2fv(loc_location, nyc3857);
 });
 
 let frameNum = 0;
@@ -50,6 +45,7 @@ function animation(_slayer) {
   const prog = _slayer.program;
 
   gl.useProgram(prog);
+
   if (!u_frame) {
     u_frame = gl.getUniformLocation(prog, 'u_frame');
   } else {
@@ -61,7 +57,7 @@ function animation(_slayer) {
     u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
     gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
   }
-  
+
   map.triggerRepaint();
   requestAnimationFrame(() => { animation(_slayer) });
 }
