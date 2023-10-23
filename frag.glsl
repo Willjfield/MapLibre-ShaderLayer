@@ -14,20 +14,21 @@ vec2 map(vec2 value, vec2 inMin, vec2 inMax, vec2 outMin, vec2 outMax) {
 highp vec2 normalizedFragCoordFromLatLng() {
 
   highp vec2 uv = gl_FragCoord.xy/u_resolution;
+  
+  //float pixelAspect = 1.063;//??????
 
-  return map(uv, vec2(0.,0.), vec2(2.,2.),u_bbox.xy, u_bbox.zw);
+  return map(uv, vec2(0.,0.), vec2(2., 2.),u_bbox.xy, u_bbox.zw);
 
 }
 
 void main() {
-    float circum = 6378137.0;
+
     vec2 normFrag = normalizedFragCoordFromLatLng();
     float thresh = 10000.;
 
-    float dist = distance(normFrag,u_location);
-    bool distNYC = (dist>thresh);
+    bool distNYC = (distance(normFrag,u_location)>thresh);
 
-    vec4 color = distNYC ? vec4(0.,0.,0.,0.) :  vec4(0.,0.,0.,1.);//smoothstep(vec4(normFrag/circum,1.,1.), vec4(0.,.5,1.,(((sin(u_frame)+1.))-(dist/30000.))),vec4(cos(u_frame)));
+    vec3 color = distNYC ? vec3(1.,.5,0.) : vec3(0.,.5,1.);
 
-    fragColor = color;//vec4(color,1.0);
+    fragColor = vec4(color,1.0);
 }
