@@ -1,6 +1,6 @@
 import maplibre from 'maplibre-gl';
 import ShaderLayer from './ShaderLayer.js';
-import frag from './frag.glsl';
+import frag from './frag_blockIsland.glsl';
 import proj4 from 'proj4';
 
 const map = new maplibre.Map({
