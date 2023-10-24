@@ -15,7 +15,7 @@ highp vec2 normalizedFragCoordFromLatLng() {
 
   highp vec2 uv = gl_FragCoord.xy/u_resolution;
 
-  return map(uv, vec2(0.,0.), vec2(2.,2.),u_bbox.xy, u_bbox.zw);
+  return map(uv, vec2(0.,0.), vec2(1.),u_bbox.xy, u_bbox.zw);
 
 }
 
