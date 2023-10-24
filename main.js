@@ -5,7 +5,7 @@ import proj4 from 'proj4';
 
 const map = new maplibre.Map({
   container: 'map',
-  style: 'https://api.maptiler.com/maps/dataviz/style.json?key=S5ckYmY9F8cXqKTHBLHV',
+  style: './style.json',
   center: [-71.5593, 41.1338],
   zoom: 7,
   hash: true
@@ -14,8 +14,7 @@ const map = new maplibre.Map({
 let slayer;
 
 map.once('load', () => {
-  slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag, animate: animation });
-
+  slayer = new ShaderLayer(map, 'blockIsland', ['Water'], { fragmentSource: frag, animate: animation });
   map.addLayer(slayer, 'Aeroway');
   updateResolution();
   updateGeometry();
@@ -53,7 +52,7 @@ function updateGeometry(){
 
   loc_location = gl.getUniformLocation(prog, 'u_location');
 
-  const nyc = [-71.5802, 41.1693];
+  const nyc = [-71.5802, 41.1793];
   const nyc3857 = proj4('EPSG:4326', 'EPSG:3857', nyc);
 
   gl.uniform2fv(loc_location, nyc3857);

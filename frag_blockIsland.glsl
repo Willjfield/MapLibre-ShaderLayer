@@ -28,7 +28,7 @@ void main() {
     float dist = distance(normFrag,u_location);
     bool distNYC = (dist>thresh);
 
-    vec4 color = distNYC ? vec4(0.,0.,0.,0.) :  vec4(0.,0.,0.,1.);//smoothstep(vec4(normFrag/circum,1.,1.), vec4(0.,.5,1.,(((sin(u_frame)+1.))-(dist/30000.))),vec4(cos(u_frame)));
+    vec4 color = distNYC ? vec4(0.,0.2,0.3,1.) :  vec4(mod(u_frame,1.),1.-mod(u_frame,1.),0.,1.);//smoothstep(vec4(normFrag/circum,1.,1.), vec4(0.,.5,1.,(((sin(u_frame)+1.))-(dist/30000.))),vec4(cos(u_frame)));
 
     fragColor = color;//vec4(color,1.0);
 }
