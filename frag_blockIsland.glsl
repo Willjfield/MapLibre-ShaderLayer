@@ -1,6 +1,7 @@
 #version 300 es
 precision mediump float;
 uniform float u_frame;
+uniform float u_devicePixelRatio;
 uniform vec4 u_bbox;
 uniform highp vec2 u_resolution;
 uniform vec2 u_location;
@@ -15,7 +16,7 @@ highp vec2 normalizedFragCoordFromLatLng() {
 
   highp vec2 uv = gl_FragCoord.xy/u_resolution;
 
-  return map(uv, vec2(0.,0.), vec2(1.),u_bbox.xy, u_bbox.zw);
+  return map(uv, vec2(0.), vec2(u_devicePixelRatio),u_bbox.xy, u_bbox.zw);
 
 }
 

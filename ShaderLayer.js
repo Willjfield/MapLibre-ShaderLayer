@@ -118,7 +118,7 @@ export default class MapLibreShaderLayer {
         return this.createHash(`${f.layer.id}-${f.source}-${f.sourceLayer}-${JSON.stringify(f.properties)}-${JSON.stringify(f.geometry.coordinates)}-${f._vectorTileFeature._x}-${f._vectorTileFeature._y}-${f._vectorTileFeature._z}`)
     }
 
-    coordinatesToPositions(_coords) {
+    polyCoordsToPositions(_coords) {
         var data = earcut.flatten(_coords);
 
         var triangles = earcut(data.vertices, data.holes, 2);
@@ -137,6 +137,17 @@ export default class MapLibreShaderLayer {
         }
     }
 
+    pointCoordsToPositions(_coords) {
+        console.log(_coords);
+        // for (var i = 0; i < _coords.length; i++) {
+        //     const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
+        //         lng: _coords[i][0],
+        //         lat: _coords[i][1]
+        //     });
+        //     this.positions.push(mercPos.x, mercPos.y);
+        // }
+    }
+
     calculateVertices(gl) {
         this.features = this.map.queryRenderedFeatures({ layers: this.fromLayers });
 
@@ -151,20 +162,28 @@ export default class MapLibreShaderLayer {
             //if(this.keys.indexOf(hash) === -1){
             //Or not
             if (true) {
-                if (polygons[p].geometry.type === 'Polygon') {
-                    let _coords = polygons[p].geometry.coordinates;
-                    this.coordinatesToPositions(_coords);
-                    // console.log(polygons[p].properties)
-                } else if (polygons[p].geometry.type === 'MultiPolygon') {
-                    const multiCoords = polygons[p].geometry.coordinates;
-                    multiCoords.forEach((solocoords, i) => {
-                        const _coords = solocoords;
-                        this.coordinatesToPositions(_coords)
-                    })
-                } else {
-                    console.warn(polygons[p].geometry.type, ' not supported');
+                switch (polygons[p].geometry.type) {
+                    case 'Polygon':
+                        this.polyCoordsToPositions(polygons[p].geometry.coordinates);
+                        break;
+                    case 'MultiPolygon':
+                        const multiPolyCoords = polygons[p].geometry.coordinates;
+                        multiPolyCoords.forEach((solocoords, i) => {
+                            this.polyCoordsToPositions(solocoords);
+                        });
+                        break;
+                    case 'Point':
+                        this.pointCoordsToPositions(polygons[p].geometry.coordinates);
+                        break;
+                    case 'MultiPoint':
+                        const multiPointCoords = polygons[p].geometry.coordinates;
+                        multiPointCoords.forEach((solocoords, i) => {
+                            this.pointCoordsToPositions(solocoords);
+                        })
+                    default:
+                        console.warn(polygons[p].geometry.type, ' not supported');
+                        break;
                 }
-
             }
         }
 

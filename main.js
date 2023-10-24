@@ -6,8 +6,8 @@ import proj4 from 'proj4';
 const map = new maplibre.Map({
   container: 'map',
   style: 'https://api.maptiler.com/maps/dataviz/style.json?key=S5ckYmY9F8cXqKTHBLHV',
-  center: [20, 35],
-  zoom: 5,
+  center: [-71.5593, 41.1338],
+  zoom: 7,
   hash: true
 });
 
@@ -17,13 +17,35 @@ map.once('load', () => {
   slayer = new ShaderLayer(map, 'test', ['Water'], { fragmentSource: frag, animate: animation });
 
   map.addLayer(slayer, 'Aeroway');
+  updateResolution();
+  updateGeometry();
 });
 
 let u_frame;
 let u_resolutionLocation;
+let u_pixelRatio;
 let loc_location;
+let frameNum = 0;
+
+window.addEventListener('resize', () => {
+  updateResolution();
+  updateGeometry();
+});
 
 map.on('move', () => {
+  updateGeometry();
+});
+
+function updateResolution(){
+  const gl = slayer.context;
+  const prog = slayer.program;
+  u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
+  gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
+  u_pixelRatio = gl.getUniformLocation(prog, 'u_devicePixelRatio');
+  gl.uniform1f(u_pixelRatio, window.devicePixelRatio);
+}
+
+function updateGeometry(){
   const gl = slayer.context;
   const prog = slayer.program;
 
@@ -35,9 +57,8 @@ map.on('move', () => {
   const nyc3857 = proj4('EPSG:4326', 'EPSG:3857', nyc);
 
   gl.uniform2fv(loc_location, nyc3857);
-});
+}
 
-let frameNum = 0;
 function animation(_slayer) {
   frameNum++;
 
@@ -50,12 +71,6 @@ function animation(_slayer) {
     u_frame = gl.getUniformLocation(prog, 'u_frame');
   } else {
     gl.uniform1f(u_frame, Math.sin(frameNum / 20));
-  }
-
-  //This should be on resize instead of in animate:
-  if (!u_resolutionLocation) {
-    u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
-    gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
   }
 
   map.triggerRepaint();
