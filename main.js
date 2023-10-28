@@ -35,7 +35,7 @@ map.on('move', () => {
   updateGeometry();
 });
 
-function updateResolution(){
+function updateResolution() {
   const gl = slayer.context;
   const prog = slayer.program;
   u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
@@ -44,7 +44,7 @@ function updateResolution(){
   gl.uniform1f(u_pixelRatio, window.devicePixelRatio);
 }
 
-function updateGeometry(){
+function updateGeometry() {
   const gl = slayer.context;
   const prog = slayer.program;
 
@@ -52,7 +52,7 @@ function updateGeometry(){
 
   loc_location = gl.getUniformLocation(prog, 'u_location');
 
-  const nyc = [-71.5802, 41.1793];
+  const nyc = [-71.5802, 41.1853];
   const nyc3857 = proj4('EPSG:4326', 'EPSG:3857', nyc);
 
   gl.uniform2fv(loc_location, nyc3857);
@@ -69,7 +69,7 @@ function animation(_slayer) {
   if (!u_frame) {
     u_frame = gl.getUniformLocation(prog, 'u_frame');
   } else {
-    gl.uniform1f(u_frame, Math.sin(frameNum / 20));
+    gl.uniform1f(u_frame, frameNum);
   }
 
   map.triggerRepaint();
