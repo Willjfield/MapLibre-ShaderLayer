@@ -72,7 +72,9 @@ export default class MapLibreShaderLayer {
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
         this.buffer = gl.createBuffer();
 
- 
+        this.cPos = gl.getAttribLocation(this.program, 'feature_color');
+        this.cBuffer = gl.createBuffer();
+
         this.calculateVertices(gl);
 
         if (this.animate) {
@@ -104,7 +106,26 @@ export default class MapLibreShaderLayer {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
+        
 
+        this.colorsArray = [];
+        for (var i = 0; i < this.positionLength/6; ++i) {
+            
+            var newColor = [Math.random(), Math.random(), Math.random(), 1.0];
+            this.colorsArray.push(...newColor);
+            this.colorsArray.push(...newColor);
+            this.colorsArray.push(...newColor);
+            this.colorsArray.push(...newColor);
+            this.colorsArray.push(...newColor);
+            this.colorsArray.push(...newColor);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.colorsArray), gl.STATIC_DRAW);
+
+        gl.enableVertexAttribArray(this.cPos);
+        gl.vertexAttribPointer(this.cPos, 4, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
         gl.drawArrays(gl.TRIANGLES, 0, this.positionLength / 2);
     }
 

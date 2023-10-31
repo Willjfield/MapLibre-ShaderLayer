@@ -5,7 +5,7 @@ uniform float u_devicePixelRatio;
 uniform vec4 u_bbox;
 uniform highp vec2 u_resolution;
 uniform vec2 u_location;
-//varying vec4 fcolor;
+in vec4 fcolor;
 
 out highp vec4 fragColor;
 //https://github.com/msfeldstein/glsl-map/blob/master/index.glsl
@@ -23,5 +23,5 @@ highp vec2 normalizedFragCoordFromLatLng() {
 
 void main() {
     highp vec2 uv = gl_FragCoord.xy/u_resolution;
-    fragColor = vec4(1.,0.,1.,1.0);
+    fragColor = fcolor;//vec4(1.,0.,1.,1.0);
 }
