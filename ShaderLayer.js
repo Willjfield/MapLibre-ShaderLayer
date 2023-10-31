@@ -41,6 +41,11 @@ export default class MapLibreShaderLayer {
         this.vertexSource = this.opts.vertexSource || defaultVertexSource;
         this.animate = this.opts.animate || null;
         this.onRenderCallback = this.opts.onRenderCallback || null;
+        this.pointOptions = this.opts.pointOptions || {
+            'anchor': 'center',
+            'width': 100,
+            'height': 100
+        };
     }
 
     // method called when the layer is added to the map
@@ -67,6 +72,7 @@ export default class MapLibreShaderLayer {
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
         this.buffer = gl.createBuffer();
 
+ 
         this.calculateVertices(gl);
 
         if (this.animate) {
@@ -97,6 +103,7 @@ export default class MapLibreShaderLayer {
         gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
 
         gl.drawArrays(gl.TRIANGLES, 0, this.positionLength / 2);
     }
@@ -138,14 +145,36 @@ export default class MapLibreShaderLayer {
     }
 
     pointCoordsToPositions(_coords) {
-        console.log(_coords);
-        // for (var i = 0; i < _coords.length; i++) {
-        //     const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
-        //         lng: _coords[i][0],
-        //         lat: _coords[i][1]
-        //     });
-        //     this.positions.push(mercPos.x, mercPos.y);
-        // }
+        const ratio = this.map.getContainer().offsetWidth / this.map.getContainer().offsetHeight;
+        const normWidth = (this.pointOptions.width * ratio * window.devicePixelRatio)/ this.map.getContainer().offsetWidth;
+        const normHeight = (this.pointOptions.height * ratio )/ this.map.getContainer().offsetWidth*window.devicePixelRatio;
+
+        for (var i = 0; i < _coords.length; i++) {
+            const LL = maplibregl.MercatorCoordinate.fromLngLat({
+                lng: _coords[0]-normWidth/2,
+                lat: _coords[1]-normHeight/2
+            });
+            const UL = maplibregl.MercatorCoordinate.fromLngLat({
+                lng: _coords[0]-normWidth/2,
+                lat: _coords[1]+normHeight/2
+            })
+            const UR = maplibregl.MercatorCoordinate.fromLngLat({
+                lng: _coords[0]+normWidth/2,
+                lat: _coords[1]+normHeight/2
+            })
+            const LR = maplibregl.MercatorCoordinate.fromLngLat({
+                lng: _coords[0]+normWidth/2,
+                lat: _coords[1]-normHeight/2
+            });
+            
+            this.positions.push(LL.x, LL.y);
+            this.positions.push(UL.x, UL.y);
+            this.positions.push(UR.x, UR.y);
+
+            this.positions.push(UR.x, UR.y);
+            this.positions.push(LR.x, LR.y);
+            this.positions.push(LL.x, LL.y);
+        }
     }
 
     calculateVertices(gl) {
@@ -153,9 +182,12 @@ export default class MapLibreShaderLayer {
 
         const strs = this.features.map(f => this.getFeatureHash(f));
 
-        const polygons = this.features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+        const polygons = this.features.filter(f => f.geometry.type === 'Polygon' 
+            || f.geometry.type === 'MultiPolygon' 
+            || f.geometry.type === 'Point'
+            || f.geometry.type === 'MultiPoint');
 
-
+    
         for (var p = 0; p < polygons.length; p++) {
             //TODO: hash not working
             //const hash = this.getFeatureHash(polygons[p]);
@@ -199,6 +231,9 @@ export default class MapLibreShaderLayer {
             gl.STATIC_DRAW,
             0
         );
+
+        // gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
+        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.colorsArray), gl.STATIC_DRAW);
 
         this.positions = [];
         this.keys = this.keys.concat(strs.filter((f, i) => this.keys.indexOf(f) === -1));

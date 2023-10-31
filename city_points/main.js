@@ -1,6 +1,7 @@
 import maplibre from 'maplibre-gl';
-import ShaderLayer from './ShaderLayer.js';
-import frag from './frag_blockIsland.glsl';
+import ShaderLayer from '../ShaderLayer.js';
+import frag from './frag_cities.glsl';
+import vert from './vert_cities.glsl';
 import proj4 from 'proj4';
 
 const map = new maplibre.Map({
@@ -14,8 +15,8 @@ const map = new maplibre.Map({
 let slayer;
 
 map.once('load', () => {
-  slayer = new ShaderLayer(map, 'blockIsland', ['Water'], { fragmentSource: frag, animate: animation });
-  map.addLayer(slayer, 'Aeroway');
+  slayer = new ShaderLayer(map, 'cities', ['City labels'], { fragmentSource: frag, vertexSource: vert });
+  map.addLayer(slayer, 'City labels');
   updateResolution();
   updateGeometry();
 });

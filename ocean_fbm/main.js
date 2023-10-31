@@ -1,6 +1,6 @@
 import maplibre from 'maplibre-gl';
 import ShaderLayer from '../ShaderLayer.js';
-import frag from './frag_blockIsland.glsl';
+import frag from './frag_ocean.glsl';
 import proj4 from 'proj4';
 
 const map = new maplibre.Map({
@@ -69,7 +69,7 @@ function animation(_slayer) {
   if (!u_frame) {
     u_frame = gl.getUniformLocation(prog, 'u_frame');
   } else {
-    gl.uniform1f(u_frame, frameNum);
+    gl.uniform1f(u_frame, frameNum/100);
   }
 
   map.triggerRepaint();
