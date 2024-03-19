@@ -16,6 +16,8 @@ export default class MapLibreShaderLayer {
 
         this.positions = [];
 
+        this.glDrawType = 'TRIANGLES';
+
         this.matrix;
 
         // create GLSL source for vertex shader
@@ -46,6 +48,11 @@ export default class MapLibreShaderLayer {
             'width': 100,
             'height': 100
         };
+
+        this.addedBufferNames = this.opts.addedBufferNames || [];
+
+        this.addedBuffers = {};
+        this.attrPositions = {};
     }
 
     // method called when the layer is added to the map
@@ -72,14 +79,34 @@ export default class MapLibreShaderLayer {
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
         this.buffer = gl.createBuffer();
 
-        this.cPos = gl.getAttribLocation(this.program, 'feature_color');
-        this.cBuffer = gl.createBuffer();
+        if (this.addedBufferNames.length > 0) {
+            this.addBuffers();
+        }
+
 
         this.calculateVertices(gl);
 
         if (this.animate) {
             this.animate(this);
         }
+    }
+
+    addBuffers() {
+        const gl = this.context;
+        this.addedBufferNames.forEach((b) => {
+            this.attrPositions[b] = gl.getAttribLocation(this.program, b);
+            this.addedBuffers[b] = gl.createBuffer();
+        })
+    }
+
+    setBuffer(_bufferName, data, size, type, normalized, stride, offset) {
+        const gl = this.context;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.addedBuffers[_bufferName]);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+
+        gl.enableVertexAttribArray(this.attrPositions[_bufferName]);
+        gl.vertexAttribPointer(this.attrPositions[_bufferName], size, type, normalized, stride, offset);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.addedBuffers[_bufferName]);
     }
 
     // method fired on each animation frame
@@ -94,7 +121,6 @@ export default class MapLibreShaderLayer {
             this.onRenderCallback(this.map, gl, this.program);
         }
 
-
         gl.uniformMatrix4fv(
             gl.getUniformLocation(this.program, 'u_matrix'),
             false,
@@ -106,27 +132,7 @@ export default class MapLibreShaderLayer {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        
-
-        this.colorsArray = [];
-        for (var i = 0; i < this.positionLength/6; ++i) {
-            
-            var newColor = [Math.random(), Math.random(), Math.random(), 1.0];
-            this.colorsArray.push(...newColor);
-            this.colorsArray.push(...newColor);
-            this.colorsArray.push(...newColor);
-            this.colorsArray.push(...newColor);
-            this.colorsArray.push(...newColor);
-            this.colorsArray.push(...newColor);
-        }
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.colorsArray), gl.STATIC_DRAW);
-
-        gl.enableVertexAttribArray(this.cPos);
-        gl.vertexAttribPointer(this.cPos, 4, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
-        gl.drawArrays(gl.TRIANGLES, 0, this.positionLength / 2);
+        gl.drawArrays(gl[this.glDrawType], 0, this.positionLength / 2);
     }
 
     createHash(_str) {
@@ -165,29 +171,38 @@ export default class MapLibreShaderLayer {
         }
     }
 
+    lineCoordsToPositions(_coords) {
+        for (var i = 0; i < _coords.length; i++) {
+            const mercPos = maplibregl.MercatorCoordinate.fromLngLat({
+                lng: _coords[i][0],
+                lat: _coords[i][1]
+            });
+            this.positions.push(mercPos.x, mercPos.y);
+        }
+    }
     pointCoordsToPositions(_coords) {
         const ratio = this.map.getContainer().offsetWidth / this.map.getContainer().offsetHeight;
-        const normWidth = (this.pointOptions.width * ratio * window.devicePixelRatio)/ this.map.getContainer().offsetWidth;
-        const normHeight = (this.pointOptions.height * ratio )/ this.map.getContainer().offsetWidth*window.devicePixelRatio;
+        const normWidth = (this.pointOptions.width * ratio * window.devicePixelRatio) / this.map.getContainer().offsetWidth;
+        const normHeight = (this.pointOptions.height * ratio) / this.map.getContainer().offsetWidth * window.devicePixelRatio;
 
         for (var i = 0; i < _coords.length; i++) {
             const LL = maplibregl.MercatorCoordinate.fromLngLat({
-                lng: _coords[0]-normWidth/2,
-                lat: _coords[1]-normHeight/2
+                lng: _coords[0] - normWidth / 2,
+                lat: _coords[1] - normHeight / 2
             });
             const UL = maplibregl.MercatorCoordinate.fromLngLat({
-                lng: _coords[0]-normWidth/2,
-                lat: _coords[1]+normHeight/2
+                lng: _coords[0] - normWidth / 2,
+                lat: _coords[1] + normHeight / 2
             })
             const UR = maplibregl.MercatorCoordinate.fromLngLat({
-                lng: _coords[0]+normWidth/2,
-                lat: _coords[1]+normHeight/2
+                lng: _coords[0] + normWidth / 2,
+                lat: _coords[1] + normHeight / 2
             })
             const LR = maplibregl.MercatorCoordinate.fromLngLat({
-                lng: _coords[0]+normWidth/2,
-                lat: _coords[1]-normHeight/2
+                lng: _coords[0] + normWidth / 2,
+                lat: _coords[1] - normHeight / 2
             });
-            
+
             this.positions.push(LL.x, LL.y);
             this.positions.push(UL.x, UL.y);
             this.positions.push(UR.x, UR.y);
@@ -203,12 +218,14 @@ export default class MapLibreShaderLayer {
 
         const strs = this.features.map(f => this.getFeatureHash(f));
 
-        const polygons = this.features.filter(f => f.geometry.type === 'Polygon' 
-            || f.geometry.type === 'MultiPolygon' 
+        const polygons = this.features.filter(f => f.geometry.type === 'Polygon'
+            || f.geometry.type === 'MultiPolygon'
             || f.geometry.type === 'Point'
-            || f.geometry.type === 'MultiPoint');
+            || f.geometry.type === 'MultiPoint'
+            || f.geometry.type === 'LineString'
+        );
 
-    
+        console.log(this.features.map(f => f.geometry.type));
         for (var p = 0; p < polygons.length; p++) {
             //TODO: hash not working
             //const hash = this.getFeatureHash(polygons[p]);
@@ -233,6 +250,11 @@ export default class MapLibreShaderLayer {
                         multiPointCoords.forEach((solocoords, i) => {
                             this.pointCoordsToPositions(solocoords);
                         })
+                        break;
+                    case 'LineString':
+                        this.glDrawType = 'LINES';
+                        this.lineCoordsToPositions(polygons[p].geometry.coordinates);
+                        break;
                     default:
                         console.warn(polygons[p].geometry.type, ' not supported');
                         break;
@@ -242,9 +264,6 @@ export default class MapLibreShaderLayer {
 
         this.positionLength = this.positions.length;
 
-        // create and initialize a WebGLBuffer to store vertex and color data
-        // gl.clear(gl.COLOR_BUFFER_BIT);
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
         gl.bufferData(
             gl.ARRAY_BUFFER,
@@ -252,9 +271,6 @@ export default class MapLibreShaderLayer {
             gl.STATIC_DRAW,
             0
         );
-
-        // gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.colorsArray), gl.STATIC_DRAW);
 
         this.positions = [];
         this.keys = this.keys.concat(strs.filter((f, i) => this.keys.indexOf(f) === -1));

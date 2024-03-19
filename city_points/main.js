@@ -15,8 +15,25 @@ const map = new maplibre.Map({
 let slayer;
 
 map.once('load', () => {
-  slayer = new ShaderLayer(map, 'cities', ['City labels'], { fragmentSource: frag, vertexSource: vert });
+
+  slayer = new ShaderLayer(map,
+    'cities',
+    ['City labels'],
+    {
+      fragmentSource: frag,
+      vertexSource: vert,
+      addedBufferNames: ['feature_color']
+    });
+
   map.addLayer(slayer, 'City labels');
+  
+  let colorsArray = [];
+  for (var i = 0; i < slayer.positionLength/2; ++i) {
+      var newColor = [Math.random(), Math.random(), Math.random(), 1.0];
+      colorsArray.push(...newColor);
+  }
+
+  slayer.setBuffer('feature_color', colorsArray, 4, slayer.context.FLOAT, false, 0, 0);
   updateResolution();
   updateGeometry();
 });
