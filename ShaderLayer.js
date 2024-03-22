@@ -77,6 +77,7 @@ export default class MapLibreShaderLayer {
         gl.linkProgram(this.program);
 
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
+       
         this.buffer = gl.createBuffer();
 
         if (this.addedBufferNames.length > 0) {
@@ -101,12 +102,13 @@ export default class MapLibreShaderLayer {
 
     setBuffer(_bufferName, data, size, type, normalized, stride, offset) {
         const gl = this.context;
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.addedBuffers[_bufferName]);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
-
-        gl.enableVertexAttribArray(this.attrPositions[_bufferName]);
-        gl.vertexAttribPointer(this.attrPositions[_bufferName], size, type, normalized, stride, offset);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.addedBuffers[_bufferName]);
+        if (this.attrPositions[_bufferName] > -1) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.addedBuffers[_bufferName]);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(this.attrPositions[_bufferName]);
+            gl.vertexAttribPointer(this.attrPositions[_bufferName], size, type, normalized, stride, offset);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.addedBuffers[_bufferName]);
+        }
     }
 
     // method fired on each animation frame
@@ -225,7 +227,6 @@ export default class MapLibreShaderLayer {
             || f.geometry.type === 'LineString'
         );
 
-        console.log(this.features.map(f => f.geometry.type));
         for (var p = 0; p < polygons.length; p++) {
             //TODO: hash not working
             //const hash = this.getFeatureHash(polygons[p]);

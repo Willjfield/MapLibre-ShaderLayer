@@ -12,11 +12,11 @@ const map = new maplibre.Map({
   hash: true
 });
 
-let slayer;
+let shaderLayer;
 
 map.once('load', () => {
 
-  slayer = new ShaderLayer(map,
+  shaderLayer = new ShaderLayer(map,
     'cities',
     ['City labels'],
     {
@@ -25,15 +25,15 @@ map.once('load', () => {
       addedBufferNames: ['feature_color']
     });
 
-  map.addLayer(slayer, 'City labels');
+  map.addLayer(shaderLayer, 'City labels');
   
   let colorsArray = [];
-  for (var i = 0; i < slayer.positionLength/2; ++i) {
+  for (var i = 0; i < shaderLayer.positionLength/2; ++i) {
       var newColor = [Math.random(), Math.random(), Math.random(), 1.0];
       colorsArray.push(...newColor);
   }
 
-  slayer.setBuffer('feature_color', colorsArray, 4, slayer.context.FLOAT, false, 0, 0);
+  shaderLayer.setBuffer('feature_color', colorsArray, 4, shaderLayer.context.FLOAT, false, 0, 0);
   updateResolution();
   updateGeometry();
 });
@@ -54,8 +54,8 @@ map.on('move', () => {
 });
 
 function updateResolution() {
-  const gl = slayer.context;
-  const prog = slayer.program;
+  const gl = shaderLayer.context;
+  const prog = shaderLayer.program;
   u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
   gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
   u_pixelRatio = gl.getUniformLocation(prog, 'u_devicePixelRatio');
@@ -63,10 +63,10 @@ function updateResolution() {
 }
 
 function updateGeometry() {
-  const gl = slayer.context;
-  const prog = slayer.program;
+  const gl = shaderLayer.context;
+  const prog = shaderLayer.program;
 
-  slayer.updateMapBBox();
+  shaderLayer.updateMapBBox();
 
   loc_location = gl.getUniformLocation(prog, 'u_location');
 
@@ -76,11 +76,11 @@ function updateGeometry() {
   gl.uniform2fv(loc_location, nyc3857);
 }
 
-function animation(_slayer) {
+function animation(_shaderLayer) {
   frameNum++;
 
-  const gl = _slayer.context;
-  const prog = _slayer.program;
+  const gl = _shaderLayer.context;
+  const prog = _shaderLayer.program;
 
   gl.useProgram(prog);
 
@@ -91,6 +91,6 @@ function animation(_slayer) {
   }
 
   map.triggerRepaint();
-  requestAnimationFrame(() => { animation(_slayer) });
+  requestAnimationFrame(() => { animation(_shaderLayer) });
 }
 

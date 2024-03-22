@@ -11,11 +11,11 @@ const map = new maplibre.Map({
   hash: true
 });
 
-let slayer;
+let shaderLayer;
 
 map.once('load', () => {
-  slayer = new ShaderLayer(map, 'blockIsland', ['Water'], { fragmentSource: frag, animate: animation });
-  map.addLayer(slayer, 'Aeroway');
+  shaderLayer = new ShaderLayer(map, 'oceanfmb', ['Water'], { fragmentSource: frag, animate: animation });
+  map.addLayer(shaderLayer, 'Aeroway');
   updateResolution();
   updateGeometry();
 });
@@ -23,7 +23,6 @@ map.once('load', () => {
 let u_frame;
 let u_resolutionLocation;
 let u_pixelRatio;
-let loc_location;
 let frameNum = 0;
 
 window.addEventListener('resize', () => {
@@ -36,8 +35,8 @@ map.on('move', () => {
 });
 
 function updateResolution() {
-  const gl = slayer.context;
-  const prog = slayer.program;
+  const gl = shaderLayer.context;
+  const prog = shaderLayer.program;
   u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
   gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
   u_pixelRatio = gl.getUniformLocation(prog, 'u_devicePixelRatio');
@@ -45,24 +44,14 @@ function updateResolution() {
 }
 
 function updateGeometry() {
-  const gl = slayer.context;
-  const prog = slayer.program;
-
-  slayer.updateMapBBox();
-
-  loc_location = gl.getUniformLocation(prog, 'u_location');
-
-  const nyc = [-71.5802, 41.1853];
-  const nyc3857 = proj4('EPSG:4326', 'EPSG:3857', nyc);
-
-  gl.uniform2fv(loc_location, nyc3857);
+  shaderLayer.updateMapBBox();
 }
 
-function animation(_slayer) {
+function animation(_shaderLayer) {
   frameNum++;
 
-  const gl = _slayer.context;
-  const prog = _slayer.program;
+  const gl = _shaderLayer.context;
+  const prog = _shaderLayer.program;
 
   gl.useProgram(prog);
 
@@ -73,6 +62,6 @@ function animation(_slayer) {
   }
 
   map.triggerRepaint();
-  requestAnimationFrame(() => { animation(_slayer) });
+  requestAnimationFrame(() => { animation(_shaderLayer) });
 }
 
