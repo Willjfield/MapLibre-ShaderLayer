@@ -77,7 +77,7 @@ export default class MapLibreShaderLayer {
         gl.linkProgram(this.program);
 
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
-       
+
         this.buffer = gl.createBuffer();
 
         if (this.addedBufferNames.length > 0) {
@@ -151,7 +151,7 @@ export default class MapLibreShaderLayer {
     }
 
     getFeatureHash(f) {
-        return this.createHash(`${f.layer.id}-${f.source}-${f.sourceLayer}-${JSON.stringify(f.properties)}-${JSON.stringify(f.geometry.coordinates)}-${f._vectorTileFeature._x}-${f._vectorTileFeature._y}-${f._vectorTileFeature._z}`)
+        return this.createHash(`${f.id}${f._vectorTileFeature._x}${f._vectorTileFeature._y}${f._vectorTileFeature._z}`)//${JSON.stringify(f.geometry.coordinates)}
     }
 
     polyCoordsToPositions(_coords) {
@@ -217,8 +217,7 @@ export default class MapLibreShaderLayer {
 
     calculateVertices(gl) {
         this.features = this.map.queryRenderedFeatures({ layers: this.fromLayers });
-
-        const strs = this.features.map(f => this.getFeatureHash(f));
+        const _ids = this.features.map(f => this.getFeatureHash(f));
 
         const polygons = this.features.filter(f => f.geometry.type === 'Polygon'
             || f.geometry.type === 'MultiPolygon'
@@ -228,11 +227,11 @@ export default class MapLibreShaderLayer {
         );
 
         for (var p = 0; p < polygons.length; p++) {
-            //TODO: hash not working
-            //const hash = this.getFeatureHash(polygons[p]);
-            //if(this.keys.indexOf(hash) === -1){
-            //Or not
-            if (true) {
+            const hash = _ids[p];
+            if (this.keys.indexOf(hash) === -1) {
+                this.keys.push(hash);
+                //Or not
+                // if(true) {
                 switch (polygons[p].geometry.type) {
                     case 'Polygon':
                         this.polyCoordsToPositions(polygons[p].geometry.coordinates);
@@ -273,8 +272,13 @@ export default class MapLibreShaderLayer {
             0
         );
 
-        this.positions = [];
-        this.keys = this.keys.concat(strs.filter((f, i) => this.keys.indexOf(f) === -1));
+        //Reset cache. Definitely a smarter way to do this. Removing first item in instead of resetting the whole thing at once?
+        const MAX_BUFFER_SIZE = 300;
+        if(this.keys.length > MAX_BUFFER_SIZE){
+            this.positions = [];
+            this.keys = [];
+        }
+        
 
     }
 
