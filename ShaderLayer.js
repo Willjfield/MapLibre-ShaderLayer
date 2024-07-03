@@ -1,7 +1,7 @@
 import earcut from "earcut";
 import maplibregl from 'maplibre-gl';
 import proj4 from 'proj4';
-
+import { loadTexture } from "./utils";
 export default class MapLibreShaderLayer {
     constructor(map, id, fromLayers, opts) {
         //map, id, fromLayers, fragmentSource, vertexSource;
@@ -64,11 +64,13 @@ export default class MapLibreShaderLayer {
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
         gl.shaderSource(vertexShader, this.vertexSource);
         gl.compileShader(vertexShader);
+        console.log(gl.getShaderInfoLog(vertexShader))
 
         // create a fragment shader
         const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
         gl.shaderSource(fragmentShader, this.fragmentSource);
         gl.compileShader(fragmentShader);
+        console.log(gl.getShaderInfoLog(fragmentShader))
 
         // link the two shaders into a WebGL program
         this.program = gl.createProgram();
@@ -274,11 +276,11 @@ export default class MapLibreShaderLayer {
 
         //Reset cache. Definitely a smarter way to do this. Removing first item in instead of resetting the whole thing at once?
         const MAX_BUFFER_SIZE = 300;
-        if(this.keys.length > MAX_BUFFER_SIZE){
+        if (this.keys.length > MAX_BUFFER_SIZE) {
             this.positions = [];
             this.keys = [];
         }
-        
+
 
     }
 
@@ -297,6 +299,29 @@ export default class MapLibreShaderLayer {
 
         gl.uniform4fv(u_bboxLocation, [sw3857[0], sw3857[1], ne3857[0], ne3857[1]]);
     }
+
+    initTextureBuffer(gl) {
+        const textureCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(this.positions),
+            gl.STATIC_DRAW,
+        );
+
+        return textureCoordBuffer;
+    }
+
+    loadTexture(gl,_path) {
+            // Load texture
+        const texture = loadTexture(gl, _path);
+        // Flip image pixels into the bottom-to-top order that WebGL expects.
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        return texture
+    }
+
+
 }
 
 

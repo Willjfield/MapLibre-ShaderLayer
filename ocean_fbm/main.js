@@ -45,6 +45,7 @@ function updateResolution() {
 
 function updateGeometry() {
   shaderLayer.updateMapBBox();
+  console.log(shaderLayer.positions)
 }
 
 function animation(_shaderLayer) {
