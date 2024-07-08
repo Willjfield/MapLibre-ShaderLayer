@@ -18,19 +18,30 @@ let shaderLayer;
 let u_resolutionLocation, u_pixelRatio;
 
 map.once('load', () => {
-  shaderLayer = new ShaderLayer(map, 'shaderLayer', ['Landcover'], { fragmentSource: frag, vertexSource: vert });
-  map.addLayer(shaderLayer, 'Forest');
+  shaderLayer = new ShaderLayer(map, 'shaderLayer', ['Water'], { fragmentSource: frag, vertexSource: vert });
+  map.addLayer(shaderLayer, 'Aeroway');
   const gl = shaderLayer.context;
   const prog = shaderLayer.program;
   
   gl.useProgram(prog);
   console.log(gl.getProgramInfoLog(prog))
 
-  shaderLayer.loadTexture(gl,'grass_texture/Textures/01A.png')
+  //shaderLayer.loadTexture(gl,'grass_texture/Textures/01C.png')
 
   // let u_colorLocation = gl.getUniformLocation(prog, 'u_color');
   // gl.uniform4fv(u_colorLocation, [0.0, 1.0, 0.0, 1.0]);
 });
+
+map.on('render', () => {
+  // loc_location = gl.getUniformLocation(prog, 'u_location');
+
+  // const nyc = [-71.5802, 41.1853];
+  // const nyc3857 = proj4('EPSG:4326', 'EPSG:3857', nyc);
+
+ // gl.uniform2fv(loc_location, nyc3857);
+  //shaderLayer.render()
+  
+})
 
 
 

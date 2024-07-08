@@ -1,15 +1,18 @@
 #version 300 es
     in vec2 a_pos;
     in vec2 aTextureCoord;
+  in vec2 a_texcoord;
 
    uniform mat4 u_matrix;
 
-    out highp vec2 vTextureCoord;
+   out vec2 v_texcoord;
 
     void main(void) {
       gl_Position = u_matrix * vec4(a_pos,0., 1.0);
-      vTextureCoord = aTextureCoord;
+      v_texcoord = a_texcoord;
     }
+
+    
 
 
 // #version 300 es
