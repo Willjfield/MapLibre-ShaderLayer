@@ -51,6 +51,7 @@ export default class MapLibreShaderLayer {
 
         this.addedBufferNames = this.opts.addedBufferNames || [];
         this.texcoordAttributeLocation = {};
+        this.texture = {};
         this.addedBuffers = {};
         this.attrPositions = {};
     }
@@ -81,19 +82,27 @@ export default class MapLibreShaderLayer {
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
         this.texcoordAttributeLocation = gl.getAttribLocation(this.program, "a_texcoord");
 
-
         this.buffer = gl.createBuffer();
 
         if (this.addedBufferNames.length > 0) {
             this.addBuffers();
         }
 
-
         this.calculateVertices(gl);
 
         if (this.animate) {
             this.animate(this);
         }
+
+
+        this.image = new Image();
+        this.image.src = "./grass_texture/Textures/01A.png";
+        const self = this;
+        this.image.addEventListener('load', function () {
+            self.map.triggerRepaint();
+            // self.establishTexture(gl, self.image);
+
+        });
     }
 
     addBuffers() {
@@ -136,50 +145,9 @@ export default class MapLibreShaderLayer {
         gl.enableVertexAttribArray(this.aPos);
         gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
 
-        let texcoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-        //
-        gl.bufferData(
-            gl.ARRAY_BUFFER,
-            new Float32Array(this.positions),
-            gl.STATIC_DRAW,
-            0
-        );
-
-        gl.enableVertexAttribArray(this.texcoordAttributeLocation);
-
-        // Tell the attribute how to get data out of texcoordBuffer (ARRAY_BUFFER)
-        var size = 2;          // 2 components per iteration
-        var type = gl.FLOAT;   // the data is 32bit floating point values
-        var normalize = true;  // convert from 0-255 to 0.0-1.0
-        var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next color
-        var offset = 0;        // start at the beginning of the buffer
-        gl.vertexAttribPointer(
-            this.texcoordAttributeLocation, size, type, normalize, stride, offset);
-
-        // Create a texture.
-        var texture = gl.createTexture();
-        console.log(texture)
-        // use texture unit 0
-        gl.activeTexture(gl.TEXTURE0 + 0);
-
-        // bind to the TEXTURE_2D bind point of texture unit 0
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-
-        // Fill the texture with a 1x1 blue pixel.
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-            new Uint8Array([0, 0, 255, 255]));
-
-        // Asynchronously load an image
-        // var image = new Image();
-        // image.src = "./grass_texture/Textures/01A.png";
-        // image.addEventListener('load', function () {
-        //     // Now that the image has loaded make copy it to the texture.
-        //     gl.bindTexture(gl.TEXTURE_2D, texture);
-        //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        //     gl.generateMipmap(gl.TEXTURE_2D);
-
-        // });
+        if (this.image) {
+            this.establishTexture(gl, this.image);
+        }
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -348,7 +316,44 @@ export default class MapLibreShaderLayer {
         gl.uniform4fv(u_bboxLocation, [sw3857[0], sw3857[1], ne3857[0], ne3857[1]]);
     }
 
+    establishTexture(gl, img) {
 
+        let texcoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+        //
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(this.positions),
+            gl.STATIC_DRAW,
+            0
+        );
+
+        gl.enableVertexAttribArray(this.texcoordAttributeLocation);
+
+        // Tell the attribute how to get data out of texcoordBuffer (ARRAY_BUFFER)
+        var size = 2;          // 2 components per iteration
+        var type = gl.FLOAT;   // the data is 32bit floating point values
+        var normalize = true;  // convert from 0-255 to 0.0-1.0
+        var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next color
+        var offset = 0;        // start at the beginning of the buffer
+        gl.vertexAttribPointer(
+            this.texcoordAttributeLocation, size, type, normalize, stride, offset);
+
+        // Create a texture.
+        this.texture = gl.createTexture();
+        // use texture unit 0
+        gl.activeTexture(gl.TEXTURE0 + 0);
+
+        // bind to the TEXTURE_2D bind point of texture unit 0
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+        // Fill the texture with a 1x1 blue pixel.
+        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+        //     new Uint8Array([0, 0, 255, 255]));
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.generateMipmap(gl.TEXTURE_2D);
+    }
 
 }
 
