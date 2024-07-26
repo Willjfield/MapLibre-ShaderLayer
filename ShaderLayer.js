@@ -51,6 +51,7 @@ export default class MapLibreShaderLayer {
 
         this.addedBufferNames = this.opts.addedBufferNames || [];
         this.texcoordAttributeLocation = {};
+        this.normCoordAttributeLocation = {};
         this.texture = {};
         this.addedBuffers = {};
         this.attrPositions = {};
@@ -81,7 +82,7 @@ export default class MapLibreShaderLayer {
 
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
         this.texcoordAttributeLocation = gl.getAttribLocation(this.program, "a_texcoord");
-
+        this.normCoordAttributeLocation = gl.getAttribLocation(this.program, "a_normcoord");
         this.buffer = gl.createBuffer();
 
         if (this.addedBufferNames.length > 0) {
@@ -96,13 +97,21 @@ export default class MapLibreShaderLayer {
 
 
         this.image = new Image();
-        this.image.src = "./grass_texture/Textures/01A.png";
+        this.image.src = "./crunchyworld/Textures/Dirtx256.png";
         const self = this;
         this.image.addEventListener('load', function () {
             self.map.triggerRepaint();
-            // self.establishTexture(gl, self.image);
-
         });
+
+        this.normalImage = new Image();
+        this.normalImage.src = "./crunchyworld/Textures/DirtNorm.png";
+
+        this.normalImage.addEventListener('load', function () {
+            self.map.triggerRepaint();
+        });
+
+
+
     }
 
     addBuffers() {
@@ -146,11 +155,20 @@ export default class MapLibreShaderLayer {
         gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
 
         if (this.image) {
-            this.establishTexture(gl, this.image);
+            this.establishTexture(gl, this.image, 'texcoordAttributeLocation', 0);
+        }
+
+        if (this.normalImage) {
+            this.establishTexture(gl, this.normalImage, 'normCoordAttributeLocation', 1);
         }
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        var textureLocation = gl.getUniformLocation(this.program, "u_texture");
+        gl.uniform1i(textureLocation, 0);
+
+        var normalTextureLocation = gl.getUniformLocation(this.program, "u_normal");
+        gl.uniform1i(normalTextureLocation, 1);
 
         gl.drawArrays(gl[this.glDrawType], 0, this.positionLength / 2);
     }
@@ -234,6 +252,16 @@ export default class MapLibreShaderLayer {
     }
 
     calculateVertices(gl) {
+        //console.log('calculateVertices')
+        this.positions = [];
+        this.keys = [];
+        //Reset cache. Definitely a smarter way to do this. Removing first item in instead of resetting the whole thing at once?
+        // console.log(this.keys.length)
+        // const MAX_BUFFER_SIZE = 500;
+        // if (this.keys.length > MAX_BUFFER_SIZE) {
+        //     this.positions = [];
+        //     this.keys = [];
+        // }
         this.features = this.map.queryRenderedFeatures({ layers: this.fromLayers });
         const _ids = this.features.map(f => this.getFeatureHash(f));
 
@@ -290,17 +318,13 @@ export default class MapLibreShaderLayer {
             0
         );
 
-        //Reset cache. Definitely a smarter way to do this. Removing first item in instead of resetting the whole thing at once?
-        const MAX_BUFFER_SIZE = 300;
-        if (this.keys.length > MAX_BUFFER_SIZE) {
-            this.positions = [];
-            this.keys = [];
-        }
+
 
 
     }
 
     updateMapBBox() {
+
         const gl = this.context;
         const prog = this.program;
 
@@ -316,7 +340,7 @@ export default class MapLibreShaderLayer {
         gl.uniform4fv(u_bboxLocation, [sw3857[0], sw3857[1], ne3857[0], ne3857[1]]);
     }
 
-    establishTexture(gl, img) {
+    establishTexture(gl, img, location, tunit) {
 
         let texcoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
@@ -328,7 +352,7 @@ export default class MapLibreShaderLayer {
             0
         );
 
-        gl.enableVertexAttribArray(this.texcoordAttributeLocation);
+        gl.enableVertexAttribArray(this[location]);
 
         // Tell the attribute how to get data out of texcoordBuffer (ARRAY_BUFFER)
         var size = 2;          // 2 components per iteration
@@ -337,20 +361,20 @@ export default class MapLibreShaderLayer {
         var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next color
         var offset = 0;        // start at the beginning of the buffer
         gl.vertexAttribPointer(
-            this.texcoordAttributeLocation, size, type, normalize, stride, offset);
+            this[location], size, type, normalize, stride, offset);
 
         // Create a texture.
-        this.texture = gl.createTexture();
+        this.texture[location] = gl.createTexture();
         // use texture unit 0
-        gl.activeTexture(gl.TEXTURE0 + 0);
+        gl.activeTexture(gl.TEXTURE0 + tunit);
 
         // bind to the TEXTURE_2D bind point of texture unit 0
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture[location]);
 
         // Fill the texture with a 1x1 blue pixel.
         // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
         //     new Uint8Array([0, 0, 255, 255]));
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture[location]);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
         gl.generateMipmap(gl.TEXTURE_2D);
     }
