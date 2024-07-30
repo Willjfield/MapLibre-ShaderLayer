@@ -11,6 +11,7 @@ uniform sampler2D u_normal;
 
 out highp vec4 fragColor;
 uniform float u_zoom;
+uniform vec3 u_camera;
 
     void main(void) {
       float _pow = u_zoom > 7. ? 3. : 2.;

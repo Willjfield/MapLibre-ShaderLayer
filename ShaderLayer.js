@@ -55,6 +55,9 @@ export default class MapLibreShaderLayer {
         this.texture = {};
         this.addedBuffers = {};
         this.attrPositions = {};
+
+        this.imagePath = this.opts.imagePath || null;
+        this.normalImagePath = this.opts.normalImagePath || null;
     }
 
     // method called when the layer is added to the map
@@ -95,21 +98,23 @@ export default class MapLibreShaderLayer {
             this.animate(this);
         }
 
+        if (this.imagePath) {
+            this.image = new Image();
+            this.image.src = this.imagePath;//"./crunchyworld/Textures/Dirtx256.png";
+            const self = this;
+            this.image.addEventListener('load', function () {
+                self.map.triggerRepaint();
+            });
+        }
 
-        this.image = new Image();
-        this.image.src = "./crunchyworld/Textures/Dirtx256.png";
-        const self = this;
-        this.image.addEventListener('load', function () {
-            self.map.triggerRepaint();
-        });
+        if (this.normalImagePath) {
+            this.normalImage = new Image();
+            this.normalImage.src = this.normalImagePath;//"./crunchyworld/Textures/DirtNorm.png";
 
-        this.normalImage = new Image();
-        this.normalImage.src = "./crunchyworld/Textures/DirtNorm.png";
-
-        this.normalImage.addEventListener('load', function () {
-            self.map.triggerRepaint();
-        });
-
+            this.normalImage.addEventListener('load', function () {
+                self.map.triggerRepaint();
+            });
+        }
 
 
     }
@@ -317,9 +322,6 @@ export default class MapLibreShaderLayer {
             gl.STATIC_DRAW,
             0
         );
-
-
-
 
     }
 

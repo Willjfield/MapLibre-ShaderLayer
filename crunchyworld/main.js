@@ -19,7 +19,12 @@ const map = new maplibre.Map({
 let shaderLayer;
 
 map.once('load', () => {
-  shaderLayer = new ShaderLayer(map, 'shaderLayer', ['landuse_park'], { fragmentSource: frag, vertexSource: vert });
+  shaderLayer = new ShaderLayer(map, 'shaderLayer', ['landuse_park'], {
+    fragmentSource: frag,
+    vertexSource: vert,
+    imagePath: './crunchyworld/Textures/Dirtx256.png',
+    normalImagePath: './crunchyworld/Textures/DirtNorm.png'
+  });
   map.addLayer(shaderLayer, 'landuse_urban_green');
   const gl = shaderLayer.context;
   const prog = shaderLayer.program;
@@ -32,11 +37,19 @@ map.once('load', () => {
 });
 
 map.on('move', () => {
+
   const gl = shaderLayer.context;
   const prog = shaderLayer.program;
   gl.useProgram(prog);
+
   const u_zoom_location = gl.getUniformLocation(prog, 'u_zoom');
   gl.uniform1f(u_zoom_location, Math.floor(map.getZoom()));
+
+  const u_camera_location = gl.getUniformLocation(prog, 'u_camera');
+  const x = (map.getCenter().lng + 180) / 360;
+  const y = (map.getCenter().lat + 90) / 180;
+  //console.log([x, y, 1 - (map.getZoom() / 20)])
+  gl.uniform3f(u_camera_location, x, y, 1 - (map.getZoom() / 20));
 });
 
 
