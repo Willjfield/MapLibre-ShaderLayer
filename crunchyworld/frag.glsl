@@ -30,7 +30,7 @@ highp vec2 normalizedLatLngFromFragCoord() {
 
 }
     void main(void) {
-      float _pow = u_zoom > 7. ? 3.5 : 2.;
+      float _pow = u_zoom > 7. ? 3.25 : 2.;
       float _zoom = max(pow(u_zoom*2.,_pow),1.);
       vec3 fragWorldPosition = vec3(normalizedLatLngFromFragCoord(),0.);
       //Get gl_FragCoord's latlng
@@ -45,5 +45,5 @@ highp vec2 normalizedLatLngFromFragCoord() {
       
       vec4 rgb = texture(u_texture, v_texcoord*_zoom)*dotCamera;
       //float dotPos = dot(u_camera.xzy,normSample.xyz);
-      fragColor = vec4(rgb.xyz,1.);
+      fragColor = vec4(max(rgb.x,.1),max(rgb.y,.1),max(rgb.z,.1),1.);
     }
