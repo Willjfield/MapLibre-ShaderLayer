@@ -16,12 +16,13 @@ const map = new maplibre.Map({
   hash: true
 });
 
-let shaderLayer;
+let waterShader;
 let earthShader;
 let u_resolutionLocation, u_pixelRatio;
-let pu_resolutionLocation, pu_pixelRatio;
+
+let shaderLayers = [];
 map.once('load', () => {
-  shaderLayer = new ShaderLayer(map, 'shaderLayer', ['water'], {
+  waterShader = new ShaderLayer(map, 'waterShader', ['water'], {
     fragmentSource: frag,
     vertexSource: vert,
     imagePath: './crunchyworld/Textures/Water_001_SD/Water_001_COLOR.jpg',
@@ -33,50 +34,41 @@ map.once('load', () => {
     imagePath: './crunchyworld/Textures/Rock_Moss_001_SD/Rock_Moss_001_basecolor.jpg',
     normalImagePath: './crunchyworld/Textures/Rock_Moss_001_SD/Rock_Moss_001_normal.jpg'
   });
-  map.addLayer(shaderLayer, 'physical_line_stream');
+  shaderLayers.push(waterShader);
+  shaderLayers.push(earthShader);
+
+  map.addLayer(waterShader, 'physical_line_stream');
   map.addLayer(earthShader, 'landuse_park');
 
-  const gl = shaderLayer.context;
-  const prog = shaderLayer.program;
+  for (let i = 0; i < shaderLayers.length; i++) {
+    initShaderLayer(shaderLayers[i]);
+  }
+});
 
-  const earthShadergl = earthShader.context;
-  const earthShaderprog = earthShader.program;
+function initShaderLayer(layer) {
+  const gl = layer.context;
+  const prog = layer.program;
 
   gl.useProgram(prog);
   const u_zoom_location = gl.getUniformLocation(prog, 'u_zoom');
   gl.uniform1f(u_zoom_location, Math.floor(map.getZoom()));
-
-  earthShadergl.useProgram(earthShaderprog);
-  const pu_zoom_location = gl.getUniformLocation(earthShaderprog, 'u_zoom');
-  gl.uniform1f(pu_zoom_location, Math.floor(map.getZoom() * -.1));
-
+  updateResolution(layer);
   console.log(gl.getProgramInfoLog(prog))
 
-});
-
-function updateResolution() {
-  const gl = shaderLayer.context;
-  const prog = shaderLayer.program;
+}
+function updateResolution(layer) {
+  const gl = layer.context;
+  const prog = layer.program;
   gl.useProgram(prog);
   u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
   gl.uniform2fv(u_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
   u_pixelRatio = gl.getUniformLocation(prog, 'u_devicePixelRatio');
   gl.uniform1f(u_pixelRatio, window.devicePixelRatio);
-
-  const pgl = earthShader.context;
-  const pprog = earthShader.program;
-  pgl.useProgram(pprog);
-  pu_resolutionLocation = pgl.getUniformLocation(pprog, 'u_resolution');
-  pgl.uniform2fv(pu_resolutionLocation, [map.getContainer().offsetWidth, map.getContainer().offsetHeight]);
-  pu_pixelRatio = pgl.getUniformLocation(pprog, 'u_devicePixelRatio');
-  pgl.uniform1f(pu_pixelRatio, window.devicePixelRatio);
-
 }
 
-map.on('move', () => {
-
-  const gl = shaderLayer.context;
-  const prog = shaderLayer.program;
+function onMove(_layer) {
+  const gl = _layer.context;
+  const prog = _layer.program;
   gl.useProgram(prog);
 
   const u_zoom_location = gl.getUniformLocation(prog, 'u_zoom');
@@ -85,25 +77,15 @@ map.on('move', () => {
   const u_camera_location = gl.getUniformLocation(prog, 'u_camera');
   const x = (map.getCenter().lng + 180) / 360;
   const y = (map.getCenter().lat + 90) / 180;
-  shaderLayer.updateMapBBox();
+  _layer.updateMapBBox();
   gl.uniform3f(u_camera_location, x, y, 1 - (map.getZoom() / 20));
+}
 
-  const pgl = earthShader.context;
-  const pprog = earthShader.program;
-  pgl.useProgram(pprog);
-
-  const pu_zoom_location = gl.getUniformLocation(pprog, 'u_zoom');
-  pgl.uniform1f(pu_zoom_location, Math.floor(map.getZoom()));
-
-  const pu_camera_location = pgl.getUniformLocation(pprog, 'u_camera');
-  const px = (map.getCenter().lng + 180) / 360;
-  const py = (map.getCenter().lat + 90) / 180;
-  earthShader.updateMapBBox();
-  pgl.uniform3f(pu_camera_location, px, py, 1 - (map.getZoom() / 20));
-
-  updateResolution();
-  //console.log([x, y, 1 - (map.getZoom() / 20)])
-
+map.on('move', () => {
+  for (let i = 0; i < shaderLayers.length; i++) {
+    onMove(shaderLayers[i]);
+    updateResolution(shaderLayers[i]);
+  }
 });
 
 

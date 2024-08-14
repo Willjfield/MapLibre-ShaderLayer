@@ -103,7 +103,9 @@ export default class MapLibreShaderLayer {
             this.image.src = this.imagePath;//"./crunchyworld/Textures/Dirtx256.png";
             const self = this;
             this.image.addEventListener('load', function () {
-                self.map.triggerRepaint();
+                if (self.map.triggerRepaint) {
+                    self.map.triggerRepaint();
+                }
             });
         }
 
@@ -112,7 +114,9 @@ export default class MapLibreShaderLayer {
             this.normalImage.src = this.normalImagePath;//"./crunchyworld/Textures/DirtNorm.png";
 
             this.normalImage.addEventListener('load', function () {
-                self.map.triggerRepaint();
+                if (self.map.triggerRepaint) {
+                    self.map.triggerRepaint();
+                }
             });
         }
 
