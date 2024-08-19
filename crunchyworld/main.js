@@ -75,10 +75,11 @@ function onMove(_layer) {
   gl.uniform1f(u_zoom_location, Math.floor(map.getZoom()));
 
   const u_camera_location = gl.getUniformLocation(prog, 'u_camera');
-  const x = (map.getCenter().lng + 180) / 360;
-  const y = (map.getCenter().lat + 90) / 180;
+  const x = map.getCenter().lng//(map.getCenter().lng + 180) / 360;
+  const y = map.getCenter().lat//(map.getCenter().lat + 90) / 180;
   _layer.updateMapBBox();
-  gl.uniform3f(u_camera_location, x, y, 1 - (map.getZoom() / 20));
+  const cam3857 = proj4('EPSG:4326', 'EPSG:3857', [x, y]);
+  gl.uniform3f(u_camera_location, cam3857[0], cam3857[1], 1 - (map.getZoom() / 20));
 }
 
 map.on('move', () => {

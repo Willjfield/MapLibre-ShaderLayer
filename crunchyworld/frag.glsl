@@ -21,29 +21,26 @@ vec2 map(vec2 value, vec2 inMin, vec2 inMax, vec2 outMin, vec2 outMax) {
   return outMin + (outMax - outMin) * (value - inMin) / (inMax - inMin);
 }
 
-
-highp vec2 normalizedLatLngFromFragCoord() {
+highp vec2 normalizedFragCoordFromLatLng() {
 
   highp vec2 uv = gl_FragCoord.xy/u_resolution;
 
-  return map(uv, u_bbox.xy, u_bbox.zw, vec2(0.), vec2(u_devicePixelRatio));
+  return map(uv, vec2(0.), vec2(u_devicePixelRatio),u_bbox.xy, u_bbox.zw);
 
 }
+
+
     void main(void) {
-      float _pow = u_zoom > 7. ? 3.25 : 2.;
-      float _zoom = max(pow(u_zoom*2.,_pow),1.);
-      vec3 fragWorldPosition = vec3(normalizedLatLngFromFragCoord(),0.);
-      //Get gl_FragCoord's latlng
-      //Normalize to 0-1 to match camera's position
-      //Then get the vec from fragment to camera
-      highp vec2 uv = gl_FragCoord.xy/u_resolution;
+    float circum = 6378137.0;
+    vec2 normFrag = normalizedFragCoordFromLatLng();
+    float thresh = 7000.;
+    
+    float dist = distance(normFrag,u_camera.xy);
 
-      highp vec3 uvwvec = normalize(vec3((uv.xy*2.-1.5),-.15)-u_camera.xyz);
-
-      vec3 normSample = texture(u_normal, v_texcoord*_zoom).xyz;
-      float dotCamera = dot(uvwvec,normSample.xyz)*-2.;
+      if(dist > 100.){
+        fragColor = vec4(1.,1.,1.,1.);
+      }else{
+        fragColor = vec4(0.,0.,0.,1.);
+      }
       
-      vec4 rgb = texture(u_texture, v_texcoord*_zoom)*dotCamera;
-      //float dotPos = dot(u_camera.xzy,normSample.xyz);
-      fragColor = vec4(max(rgb.x,.1),max(rgb.y,.1),max(rgb.z,.1),1.);
     }
