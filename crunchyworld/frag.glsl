@@ -31,16 +31,26 @@ highp vec2 normalizedFragCoordFromLatLng() {
 
 
     void main(void) {
-    float circum = 6378137.0;
-    vec2 normFrag = normalizedFragCoordFromLatLng();
-    float thresh = 7000.;
-    
-    float dist = distance(normFrag,u_camera.xy);
+    //float circum = 6378137.0;
+    //vec2 normFrag = normalizedFragCoordFromLatLng();
+    //float thresh = 7000.;
+    float _pow = u_zoom > 7. ? 3.25 : 2.;
+    float _zoom = max(pow(u_zoom*2.,_pow),1.);
 
-      if(dist > 100.){
-        fragColor = vec4(1.,1.,1.,1.);
-      }else{
-        fragColor = vec4(0.,0.,0.,1.);
-      }
+    vec4 normSample = texture(u_normal, v_texcoord*_zoom);
+    vec4 textureSample = texture(u_texture, v_texcoord*_zoom);
+
+    highp vec2 uv = gl_FragCoord.xy/u_resolution;
+    float aspectRatio = u_resolution.x/u_resolution.y;
+    
+    vec3 fakeWorldFragCoordPt = vec3(vec2(uv.x*aspectRatio,uv.y),0.);
+    vec3 fakeWorldCameraPt = vec3(aspectRatio,1.,1.);
+    vec3 camToCoordVec = normalize(fakeWorldCameraPt-fakeWorldFragCoordPt);
+    camToCoordVec.x *=-1.;
+    vec3 camReflection = reflect(camToCoordVec,normSample.xyz);
+    float dist=pow(dot(camReflection,vec3(aspectRatio,1.,1.)),1.5)*.25;
+    float threshold = .1;
+
+    fragColor = textureSample*vec4(vec3(dist),1.);
       
-    }
+}
