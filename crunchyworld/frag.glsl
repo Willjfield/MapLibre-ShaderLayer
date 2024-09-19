@@ -13,6 +13,7 @@ out highp vec4 fragColor;
 uniform float u_zoom;
 uniform vec3 u_camera;
 uniform highp vec2 u_resolution;
+uniform vec3 u_color;
 
 uniform vec4 u_bbox;
 uniform float u_devicePixelRatio;
@@ -42,15 +43,23 @@ highp vec2 normalizedFragCoordFromLatLng() {
 
     highp vec2 uv = gl_FragCoord.xy/u_resolution;
     float aspectRatio = u_resolution.x/u_resolution.y;
-    
-    vec3 fakeWorldFragCoordPt = vec3(vec2(uv.x*aspectRatio,uv.y),0.);
-    vec3 fakeWorldCameraPt = vec3(aspectRatio,1.,1.);
-    vec3 camToCoordVec = normalize(fakeWorldCameraPt-fakeWorldFragCoordPt);
-    camToCoordVec.x *=-1.;
-    vec3 camReflection = reflect(camToCoordVec,normSample.xyz);
-    float dist=pow(dot(camReflection,vec3(aspectRatio,1.,1.)),1.5)*.25;
-    float threshold = .1;
+    //uv.x *= aspectRatio;
+    vec2 center = vec2(1.* aspectRatio,1.);
 
-    fragColor = textureSample*vec4(vec3(dist),1.);
+    vec3 fakeWorldFragCoordPt = vec3(uv,0.);
+    vec3 fakeWorldCameraPt = vec3(center,1.);
+    vec3 camToCoordVec = normalize(fakeWorldCameraPt-fakeWorldFragCoordPt);
+    camToCoordVec.z *=-.75;
+    //camToCoordVec.x /= aspectRatio;
+    vec3 camReflection = reflect(camToCoordVec,normSample.xyz);
+    float dist=dot(camReflection,vec3(uv,-.1));
+    float threshold = .05;
+
+    
+    //bool black = distance(uv,center) > threshold;
+    //fragColor = black ? vec4(0.,0.,0.,1.) : vec4(1.,1.,1.,1.);
+
+    fragColor = textureSample*vec4(u_color,1.)*vec4(vec3(min(dist,1.)),1.);
+    
       
 }
