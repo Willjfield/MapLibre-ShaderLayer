@@ -22,6 +22,7 @@ let parkShader;
 let urbanGreenShader;
 let naturalWoodShader;
 let industrialShader;
+let scrubShader;
 
 let u_resolutionLocation, u_pixelRatio;
 
@@ -34,7 +35,9 @@ map.on('click', (e) => {
 
 });
 
+const patternScale = .75;
 map.once('load', () => {
+
   waterShader = new ShaderLayer(map, 'waterShader', ['water'], {
     fragmentSource: frag,
     vertexSource: vert,
@@ -74,12 +77,20 @@ map.once('load', () => {
     imagePath: './crunchyworld/Textures/fabric/Fabric_Knitted_006_basecolor_x512.jpg',
     normalImagePath: './crunchyworld/Textures/fabric/Fabric_Knitted_006_norm_x512.jpg'
   });
+
+  scrubShader = new ShaderLayer(map, 'scrubShader', ['natural_scrub'], {
+    fragmentSource: frag,
+    vertexSource: vert,
+    imagePath: './crunchyworld/Textures/fabric/Fabric_Knitted_006_basecolor_x512.jpg',
+    normalImagePath: './crunchyworld/Textures/fabric/Fabric_Knitted_006_norm_x512.jpg'
+  });
   shaderLayers.push(waterShader);
   shaderLayers.push(earthShader);
   shaderLayers.push(parkShader);
   shaderLayers.push(urbanGreenShader);
   shaderLayers.push(naturalWoodShader);
   shaderLayers.push(industrialShader);
+  shaderLayers.push(scrubShader);
 
   map.addLayer(waterShader, 'physical_line_stream');
   map.addLayer(earthShader, 'landuse_park');
@@ -87,6 +98,7 @@ map.once('load', () => {
   map.addLayer(urbanGreenShader, 'landuse_hospital');
   map.addLayer(naturalWoodShader, 'natural_scrub');
   map.addLayer(industrialShader, 'natural_scrub');
+  map.addLayer(scrubShader, 'natural_glacier');
   //for (let i = 0; i < shaderLayers.length; i++) {
   initShaderLayer(waterShader, [0.0, 0.0, 1.0]);
   initShaderLayer(earthShader, [0.0, 1.0, 0.3]);
@@ -94,6 +106,7 @@ map.once('load', () => {
   initShaderLayer(urbanGreenShader, [156 / 255, 211 / 255, 180 / 255]);
   initShaderLayer(naturalWoodShader, [156 / 255, 211 / 255, 180 / 255]);
   initShaderLayer(industrialShader, [156 / 255, 130 / 255, 120 / 255]);
+  initShaderLayer(scrubShader, [156 / 255, 211 / 255, 210 / 255]);
   //}
 });
 
@@ -103,7 +116,7 @@ function initShaderLayer(layer, color) {
 
   gl.useProgram(prog);
   const u_zoom_location = gl.getUniformLocation(prog, 'u_zoom');
-  gl.uniform1f(u_zoom_location, Math.floor(map.getZoom()));
+  gl.uniform1f(u_zoom_location, Math.floor(map.getZoom() * patternScale));
 
   const u_color_location = gl.getUniformLocation(prog, 'u_color');
   gl.uniform3f(u_color_location, color[0], color[1], color[2]);
@@ -128,7 +141,7 @@ function onMove(_layer) {
   gl.useProgram(prog);
 
   const u_zoom_location = gl.getUniformLocation(prog, 'u_zoom');
-  gl.uniform1f(u_zoom_location, Math.floor(map.getZoom()));
+  gl.uniform1f(u_zoom_location, Math.floor(map.getZoom() * patternScale));
 
   const u_camera_location = gl.getUniformLocation(prog, 'u_camera');
   const x = map.getCenter().lng//(map.getCenter().lng + 180) / 360;

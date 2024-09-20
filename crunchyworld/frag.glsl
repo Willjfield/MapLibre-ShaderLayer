@@ -43,23 +43,19 @@ highp vec2 normalizedFragCoordFromLatLng() {
 
     highp vec2 uv = gl_FragCoord.xy/u_resolution;
     float aspectRatio = u_resolution.x/u_resolution.y;
-    //uv.x *= aspectRatio;
-    vec2 center = vec2(1.* aspectRatio,1.);
+
+    vec2 center = vec2(.5*aspectRatio,1.);
 
     vec3 fakeWorldFragCoordPt = vec3(uv,0.);
-    vec3 fakeWorldCameraPt = vec3(center,1.);
+    vec3 fakeWorldCameraPt = vec3(center,.5);
+
     vec3 camToCoordVec = normalize(fakeWorldCameraPt-fakeWorldFragCoordPt);
-    camToCoordVec.z *=-.75;
-    //camToCoordVec.x /= aspectRatio;
+    camToCoordVec.z *= -.75;
+
     vec3 camReflection = reflect(camToCoordVec,normSample.xyz);
+
     float dist=dot(camReflection,vec3(uv,-.1));
-    float threshold = .05;
-
-    
-    //bool black = distance(uv,center) > threshold;
-    //fragColor = black ? vec4(0.,0.,0.,1.) : vec4(1.,1.,1.,1.);
-
-    fragColor = textureSample*vec4(u_color,1.)*vec4(vec3(min(dist,1.)),1.);
+    fragColor = textureSample*vec4(u_color,1.)*vec4(vec3(max(.2,min(dist,1.))),1.);
     
       
 }

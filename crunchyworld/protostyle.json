@@ -96,6 +96,9 @@
                     "hospital"
                 ]
             ],
+            "layout": {
+                "visibility": "none"
+            },
             "paint": {
                 "fill-color": "#e4dad9"
             }
@@ -132,6 +135,9 @@
                     "college"
                 ]
             ],
+            "layout": {
+                "visibility": "none"
+            },
             "paint": {
                 "fill-color": "#e4ded7"
             }
@@ -214,9 +220,9 @@
                         "zoom"
                     ],
                     0,
-                    "#d0ded0",
+                    "#000",
                     12,
-                    "#a0d9a0"
+                    "#000"
                 ]
             }
         },
@@ -366,7 +372,7 @@
             "source": "protomaps",
             "source-layer": "water",
             "paint": {
-                "fill-color": "#80deea"
+                "fill-color": "#000"
             }
         },
         {
@@ -383,6 +389,9 @@
                     "stream"
                 ]
             ],
+            "layout": {
+                "visibility": "none"
+            },
             "paint": {
                 "line-color": "#80deea",
                 "line-width": 0.5
@@ -402,6 +411,9 @@
                     "river"
                 ]
             ],
+            "layout": {
+                "visibility": "none"
+            },
             "paint": {
                 "line-color": "#80deea",
                 "line-width": [
@@ -1043,6 +1055,9 @@
             "type": "fill",
             "source": "protomaps",
             "source-layer": "buildings",
+            "layout": {
+                "visibility": "none"
+            },
             "paint": {
                 "fill-color": "#cccccc",
                 "fill-opacity": 0.5
@@ -1881,6 +1896,9 @@
             "type": "line",
             "source": "protomaps",
             "source-layer": "boundaries",
+            "layout": {
+                "visibility": "none"
+            },
             "filter": [
                 "<=",
                 "pmap:min_admin_level",
@@ -1905,6 +1923,9 @@
                 "pmap:min_admin_level",
                 2
             ],
+            "layout": {
+                "visibility": "none"
+            },
             "paint": {
                 "line-color": "#adadad",
                 "line-width": 0.5,

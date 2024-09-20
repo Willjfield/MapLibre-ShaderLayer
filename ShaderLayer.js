@@ -100,7 +100,7 @@ export default class MapLibreShaderLayer {
 
         if (this.imagePath) {
             this.image = new Image();
-            this.image.src = this.imagePath;//"./crunchyworld/Textures/Dirtx256.png";
+            this.image.src = this.imagePath;
             const self = this;
             this.image.addEventListener('load', function () {
                 if (self.map.triggerRepaint) {
@@ -111,7 +111,7 @@ export default class MapLibreShaderLayer {
 
         if (this.normalImagePath) {
             this.normalImage = new Image();
-            this.normalImage.src = this.normalImagePath;//"./crunchyworld/Textures/DirtNorm.png";
+            this.normalImage.src = this.normalImagePath;
 
             this.normalImage.addEventListener('load', function () {
                 if (self.map.triggerRepaint) {
