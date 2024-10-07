@@ -56,8 +56,12 @@ export default class MapLibreShaderLayer {
         this.addedBuffers = {};
         this.attrPositions = {};
 
+        this.program;
+        this.context;
+
         this.imagePath = this.opts.imagePath || null;
         this.normalImagePath = this.opts.normalImagePath || null;
+        this.uniforms = this.opts.uniforms || [];
     }
 
     // method called when the layer is added to the map
@@ -79,9 +83,18 @@ export default class MapLibreShaderLayer {
 
         // link the two shaders into a WebGL program
         this.program = gl.createProgram();
+
+
         gl.attachShader(this.program, vertexShader);
         gl.attachShader(this.program, fragmentShader);
         gl.linkProgram(this.program);
+        gl.useProgram(this.program);
+
+        if (this.uniforms && this.uniforms.length > 0) {
+            for (let u = 0; u < this.uniforms.length; u++) {
+                this.setUniform(this.uniforms[u]);
+            }
+        }
 
         this.aPos = gl.getAttribLocation(this.program, 'a_pos');
         this.texcoordAttributeLocation = gl.getAttribLocation(this.program, "a_texcoord");
@@ -91,6 +104,8 @@ export default class MapLibreShaderLayer {
         if (this.addedBufferNames.length > 0) {
             this.addBuffers();
         }
+
+
 
         this.calculateVertices(gl);
 
@@ -144,11 +159,15 @@ export default class MapLibreShaderLayer {
 
     // method fired on each animation frame
     render(gl, matrix) {
+        //console.log('RENDER')
         this.matrix = matrix;
 
         this.calculateVertices(gl);
 
         gl.useProgram(this.program);
+
+        this.updateResolution();
+        this.updateMapBBox();
 
         if (this.onRenderCallback) {
             this.onRenderCallback(this.map, gl, this.program);
@@ -283,38 +302,38 @@ export default class MapLibreShaderLayer {
 
         for (var p = 0; p < polygons.length; p++) {
             const hash = _ids[p];
-            if (this.keys.indexOf(hash) === -1) {
-                this.keys.push(hash);
-                //Or not
-                // if(true) {
-                switch (polygons[p].geometry.type) {
-                    case 'Polygon':
-                        this.polyCoordsToPositions(polygons[p].geometry.coordinates);
-                        break;
-                    case 'MultiPolygon':
-                        const multiPolyCoords = polygons[p].geometry.coordinates;
-                        multiPolyCoords.forEach((solocoords, i) => {
-                            this.polyCoordsToPositions(solocoords);
-                        });
-                        break;
-                    case 'Point':
-                        this.pointCoordsToPositions(polygons[p].geometry.coordinates);
-                        break;
-                    case 'MultiPoint':
-                        const multiPointCoords = polygons[p].geometry.coordinates;
-                        multiPointCoords.forEach((solocoords, i) => {
-                            this.pointCoordsToPositions(solocoords);
-                        })
-                        break;
-                    case 'LineString':
-                        this.glDrawType = 'LINES';
-                        this.lineCoordsToPositions(polygons[p].geometry.coordinates);
-                        break;
-                    default:
-                        console.warn(polygons[p].geometry.type, ' not supported');
-                        break;
-                }
+            //if (this.keys.indexOf(hash) === -1) {
+            //this.keys.push(hash);
+            //Or not
+            // if(true) {
+            switch (polygons[p].geometry.type) {
+                case 'Polygon':
+                    this.polyCoordsToPositions(polygons[p].geometry.coordinates);
+                    break;
+                case 'MultiPolygon':
+                    const multiPolyCoords = polygons[p].geometry.coordinates;
+                    multiPolyCoords.forEach((solocoords, i) => {
+                        this.polyCoordsToPositions(solocoords);
+                    });
+                    break;
+                case 'Point':
+                    this.pointCoordsToPositions(polygons[p].geometry.coordinates);
+                    break;
+                case 'MultiPoint':
+                    const multiPointCoords = polygons[p].geometry.coordinates;
+                    multiPointCoords.forEach((solocoords, i) => {
+                        this.pointCoordsToPositions(solocoords);
+                    })
+                    break;
+                case 'LineString':
+                    this.glDrawType = 'LINES';
+                    this.lineCoordsToPositions(polygons[p].geometry.coordinates);
+                    break;
+                default:
+                    console.warn(polygons[p].geometry.type, ' not supported');
+                    break;
             }
+            // }
         }
 
         this.positionLength = this.positions.length;
@@ -333,7 +352,8 @@ export default class MapLibreShaderLayer {
 
         const gl = this.context;
         const prog = this.program;
-
+        gl.useProgram(prog);
+        //if (!prog) return;
         const u_bboxLocation = gl.getUniformLocation(prog, 'u_bbox');
 
         const map = this.map;
@@ -342,8 +362,47 @@ export default class MapLibreShaderLayer {
         const ne4326 = map.unproject([map.getContainer().offsetWidth, 0]);
         const sw3857 = proj4('EPSG:4326', 'EPSG:3857', [sw4326.lng, sw4326.lat]);
         const ne3857 = proj4('EPSG:4326', 'EPSG:3857', [ne4326.lng, ne4326.lat]);
-
+        //console.log([sw3857[0], sw3857[1], ne3857[0], ne3857[1]])
         gl.uniform4fv(u_bboxLocation, [sw3857[0], sw3857[1], ne3857[0], ne3857[1]]);
+    }
+
+    setUniform(uniformObj) {
+        let gl = this.context;
+        gl.useProgram(this.program);
+
+        const _location = gl.getUniformLocation(this.program, uniformObj.name);
+        switch (uniformObj.type) {
+            case 'int':
+                gl.uniform1i(_location, uniformObj.value);
+                break;
+            case 'float':
+                gl.uniform1f(_location, uniformObj.value);
+                break;
+            case 'vec2':
+                gl.uniform2fv(_location, uniformObj.value);
+                break;
+            case 'vec3':
+                gl.uniform3fv(_location, uniformObj.value);
+                break;
+            case 'vec4':
+                gl.uniform4fv(_location, uniformObj.value);
+                break;
+            default: break;
+        }
+    }
+
+    updateResolution() {
+        const gl = this.context;
+        const prog = this.program;
+        // if (!prog) return;
+        gl.useProgram(prog);
+        let u_resolutionLocation = gl.getUniformLocation(prog, 'u_resolution');
+        const res = [this.map.getContainer().offsetWidth, this.map.getContainer().offsetHeight];
+
+        gl.uniform2fv(u_resolutionLocation, res);
+        let u_pixelRatio = gl.getUniformLocation(prog, 'u_devicePixelRatio');
+        gl.uniform1f(u_pixelRatio, window.devicePixelRatio);
+        this.map.triggerRepaint();
     }
 
     establishTexture(gl, img, location, tunit) {

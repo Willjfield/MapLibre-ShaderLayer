@@ -5,20 +5,23 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index</title>
+  <title>Shader reused on multiple layers</title>
+  <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@3.3.0/dist/maplibre-gl.css' />
 
+  <style>
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      left: 0px;
+    }
+  </style>
 </head>
 
 <body>
-  <ul>
-    <li><a href="block_island.html">Block Island</a></li>
-    <li><a href="ocean_fbm.html">Ocean</a></li>
-    <li><a href="city_points.html">Cities</a></li>
-    <li><a href="multiple_layer_shader.html">Multiple Shader Layer</a></li>
-    <li><a href="crunchyworld.html">Crunchy World</a></li>
-
-    <li>------<a href="hike.html">Hike</a>-------</li>
-  </ul>
+  <div id="map"></div>
+  <script type="module" src="./example/main.js"></script>
 </body>
 
 </html>
