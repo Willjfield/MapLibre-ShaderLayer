@@ -1,4 +1,5 @@
 //https://github.com/WebGLSamples/WebGL2Samples/blob/master/samples/sampler_object.html
+//github pages
 import maplibre from 'maplibre-gl';
 import ShaderLayer from '../ShaderLayer.js';
 import frag from './frag.glsl';
